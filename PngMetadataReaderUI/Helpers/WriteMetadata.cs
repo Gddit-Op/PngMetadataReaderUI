@@ -28,7 +28,7 @@ internal static class WriteMetadata
             if (textDirs.Any() == false)
             {
                 File.WriteAllText(outputPath, "No textual metadata found in PNG.");
-                Console.WriteLine($"Output written to {outputPath}");
+                //Console.WriteLine($"Output written to {outputPath}");
                 return;
             }
 
@@ -37,7 +37,7 @@ internal static class WriteMetadata
             if (promptTag == null || string.IsNullOrWhiteSpace(promptTag.Description))
             {
                 File.WriteAllText(outputPath, $"No '{keyword}' chunk found in PNG metadata.");
-                Console.WriteLine($"Output written to {outputPath}");
+                //Console.WriteLine($"Output written to {outputPath}");
                 return;
             }
 
@@ -47,7 +47,7 @@ internal static class WriteMetadata
             if (pipeline == null)
             {
                 File.WriteAllText(outputPath, "Failed to deserialize pipeline JSON.");
-                Console.WriteLine($"Output written to {outputPath}");
+                //Console.WriteLine($"Output written to {outputPath}");
                 return;
             }
 
@@ -66,12 +66,12 @@ internal static class WriteMetadata
                 writer.WriteLine();
             }
 
-            Console.WriteLine($"Output written to {outputPath}");
+            //Console.WriteLine($"Output written to {outputPath}");
         }
         catch (Exception ex)
         {
             File.WriteAllText(outputPath, $"Error: {ex.Message}");
-            Console.WriteLine($"Error occurred. Details written to {outputPath}");
+            //Console.WriteLine($"Error occurred. Details written to {outputPath}");
         }
     }
 }
