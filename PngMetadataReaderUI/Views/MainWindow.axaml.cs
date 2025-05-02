@@ -75,16 +75,24 @@ public partial class MainWindow : Window
     {
         if (DataContext is MainWindowViewModel viewModel)
         {
-            var dialog = new OpenFileDialog
+            var options = new FilePickerOpenOptions
             {
                 Title = "Select PNG Image",
-                Filters = [new() { Name = "PNG Images", Extensions = ["png"] }]
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("PNG Images")
+                    {
+                        Patterns = new[] { "*.png" }
+                    }
+                },
+                AllowMultiple = false
             };
 
-            var result = await dialog.ShowAsync(this);
-            if (result != null && result.Length > 0)
+            var result = await StorageProvider.OpenFilePickerAsync(options);
+            if (result != null && result.Count > 0)
             {
-                viewModel.LoadImageCommand.Execute(result[0]);
+                var filePath = result[0].Path.LocalPath;
+                viewModel.LoadImageCommand.Execute(filePath);
             }
         }
     }
