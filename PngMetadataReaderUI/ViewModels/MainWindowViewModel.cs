@@ -1,6 +1,7 @@
 ﻿using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PngMetadataReaderUI.Helpers;
 using System;
 using System.IO;
 
@@ -49,6 +50,9 @@ public partial class MainWindowViewModel : ViewModelBase
             // Load the new image
             Image = new Bitmap(filePath);
             StatusMessage = $"Image loaded: {Path.GetFileName(filePath)}";
+
+            // Txt
+            filePath.WriteMetadataToTxt();
         }
         catch (Exception ex)
         {
