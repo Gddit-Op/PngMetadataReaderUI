@@ -27,16 +27,21 @@ internal static class WriteMetadata
             var textDirs = directories.Where(x => x.Name == "PNG-tEXt");
             if (textDirs.Any() == false)
             {
-                File.WriteAllText(outputPath, "No textual metadata found in PNG.");
+                File.AppendAllText(outputPath, "No textual metadata found in PNG.\r\n");
                 //Console.WriteLine($"Output written to {outputPath}");
                 return;
+            }
+
+            foreach (var dir in textDirs.SelectMany(x => x.Tags))
+            {
+                File.AppendAllText(outputPath, $"Raw-Output '{keyword}': {dir.Description}\r\n");
             }
 
             // Find the chunk with the specified keyword
             var promptTag = textDirs.SelectMany(x => x.Tags).FirstOrDefault(x => x.Description != null && x.Description.StartsWith(keyword));
             if (promptTag == null || string.IsNullOrWhiteSpace(promptTag.Description))
             {
-                File.WriteAllText(outputPath, $"No '{keyword}' chunk found in PNG metadata.");
+                File.AppendAllText(outputPath, $"\r\nNo '{keyword}' chunk found in PNG metadata.\r\n");
                 //Console.WriteLine($"Output written to {outputPath}");
                 return;
             }
@@ -46,13 +51,13 @@ internal static class WriteMetadata
             var pipeline = JsonSerializer.Deserialize<Pipeline>(tag, PipelineJsonContext.Default.Options);
             if (pipeline == null)
             {
-                File.WriteAllText(outputPath, "Failed to deserialize pipeline JSON.");
+                File.AppendAllText(outputPath, "Failed to deserialize pipeline JSON.\r\n");
                 //Console.WriteLine($"Output written to {outputPath}");
                 return;
             }
 
             // Write output to text file
-            using var writer = new StreamWriter(outputPath);
+            using var writer = new StreamWriter(outputPath, append: true);
             foreach (var kvp in pipeline)
             {
                 writer.WriteLine($"Node ID = {kvp.Key}");
@@ -70,7 +75,7 @@ internal static class WriteMetadata
         }
         catch (Exception ex)
         {
-            File.WriteAllText(outputPath, $"Error: {ex.Message}");
+            File.AppendAllText(outputPath, $"\r\nError: {ex.Message}\r\n");
             //Console.WriteLine($"Error occurred. Details written to {outputPath}");
         }
     }
