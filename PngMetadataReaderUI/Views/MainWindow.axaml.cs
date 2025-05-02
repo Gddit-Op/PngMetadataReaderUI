@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using PngMetadataReaderUI.ViewModels;
 using System;
 using System.Linq;
@@ -29,38 +30,38 @@ public partial class MainWindow : Window
     private void DragOver(object? sender, DragEventArgs e)
     {
         // Only allow file drops with PNG images
-        if (e.Data.Contains(DataFormats.FileNames))
+        //if (e.Data.Contains(DataFormats.FileNames))
+        //{
+        var fileNames = e.Data.GetFiles();
+        if (fileNames != null &&
+            fileNames.Any(f => f.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)))
         {
-            var fileNames = e.Data.GetFileNames();
-            if (fileNames != null &&
-                fileNames.Any(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)))
-            {
-                e.DragEffects = DragDropEffects.Copy;
-            }
-            else
-            {
-                e.DragEffects = DragDropEffects.None;
-            }
+            e.DragEffects = DragDropEffects.Copy;
         }
         else
         {
             e.DragEffects = DragDropEffects.None;
         }
+        //}
+        //else
+        //{
+        //    e.DragEffects = DragDropEffects.None;
+        //}
     }
 
     private void Drop(object? sender, DragEventArgs e)
     {
-        if (e.Data.Contains(DataFormats.FileNames) && DataContext is MainWindowViewModel viewModel)
+        if (DataContext is MainWindowViewModel viewModel)
         {
-            var fileNames = e.Data.GetFileNames()?.ToList();
+            var fileNames = e.Data.GetFiles()?.ToList();
             if (fileNames != null && fileNames.Count > 0)
             {
                 var pngFile = fileNames.FirstOrDefault(f =>
-                    f.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
+                    f.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
 
                 if (pngFile != null)
                 {
-                    viewModel.LoadImageCommand.Execute(pngFile);
+                    viewModel.LoadImageCommand.Execute(pngFile.TryGetLocalPath());
                 }
                 else
                 {
