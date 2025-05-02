@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:PngMetadataReaderUI.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        x:Class="PngMetadataReaderUI.Views.MainWindow"
+        x:DataType="viewModels:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Avalonia Image Drag &amp; Drop"
+        DragDrop.AllowDrop="True"
+        Width="800" Height="600">
+
+    <Design.DataContext>
+        <viewModels:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <TextBlock Grid.Row="0" 
+                   Text="Avalonia Image Drag &amp; Drop"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Margin="0,20,0,10"/>
+        
+        <Border Grid.Row="1"
+                Margin="20"
+                BorderBrush="Gray"
+                BorderThickness="2"
+                DragDrop.AllowDrop="True"
+                Background="{Binding Image, Converter={x:Static ObjectConverters.IsNotNull}, ConverterParameter=Transparent, FallbackValue=LightGray}">
+            <Panel>
+                <TextBlock Text="Drop PNG image here"
+                           IsVisible="{Binding Image, Converter={x:Static ObjectConverters.IsNull}}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontSize="18"
+                           Foreground="DarkGray"/>
+                
+                <Image Source="{Binding Image}"
+                       Stretch="Uniform"
+                       Margin="10"/>
+            </Panel>
+        </Border>
+        
+        <StackPanel Grid.Row="2" 
+                    Orientation="Vertical"
+                    Margin="20,0,20,20">
+            <TextBlock Text="{Binding StatusMessage}"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,10"/>
+            
+            <Button Content="Browse for PNG Image..." 
+                    HorizontalAlignment="Center"
+                    Command="{Binding LoadImageCommand}"
+                    CommandParameter="{Binding BrowseFilePath}"
+                    Click="BrowseButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
