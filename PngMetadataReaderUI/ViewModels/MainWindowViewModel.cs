@@ -22,10 +22,15 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void LoadImage(string filePath)
+    private void LoadImage(string? filePath)
     {
         try
         {
+            if (string.IsNullOrEmpty(filePath))
+            {
+                return;
+            }
+
             if (!File.Exists(filePath))
             {
                 StatusMessage = "File not found!";
