@@ -62,7 +62,7 @@ internal static class WriteMetadata
             {
                 writer.WriteLine($"Node ID = {kvp.Key}");
                 writer.WriteLine($"  class_type = {kvp.Value.ClassType}");
-                writer.WriteLine($"  title      = {kvp.Value.Meta.Title}");
+                writer.WriteLine($"  title      = {kvp.Value.Meta?.Title}");
                 writer.WriteLine("  inputs:");
                 foreach (var inp in kvp.Value.Inputs)
                 {
