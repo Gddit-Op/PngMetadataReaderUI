@@ -1,10 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using PngMetadataReaderUI.Helpers;
 using PngMetadataReaderUI.Models;
 using PngMetadataReaderUI.ViewModels;
 using System;
@@ -122,50 +122,6 @@ public partial class MainWindow : Window
 
     private async void OnDialogRequested(object? sender, DialogRequest request)
     {
-        var messageBlock = new TextBlock
-        {
-            Text = request.Message,
-            TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 420
-        };
-
-        if (request.Type == DialogType.Error)
-        {
-            messageBlock.Foreground = Brushes.Red;
-        }
-
-        var okButton = new Button
-        {
-            Content = "OK",
-            Width = 80,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            IsDefault = true
-        };
-
-        var dialog = new Window
-        {
-            Title = request.Title,
-            CanResize = false,
-            SizeToContent = SizeToContent.WidthAndHeight,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Content = new StackPanel
-            {
-                Margin = new Thickness(24),
-                Spacing = 12,
-                Children =
-                {
-                    messageBlock,
-                    okButton
-                }
-            }
-        };
-
-        void CloseHandler(object? _, Avalonia.Interactivity.RoutedEventArgs _1) => dialog.Close();
-
-        okButton.Click += CloseHandler;
-
-        await dialog.ShowDialog(this);
-
-        okButton.Click -= CloseHandler;
+        await MessageBoxService.ShowAsync(this, request);
     }
 }
