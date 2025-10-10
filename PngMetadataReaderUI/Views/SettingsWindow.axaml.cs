@@ -69,65 +69,19 @@ public partial class SettingsWindow : Window
         try
         {
             var settings = viewModel.ToSettings();
-            var hostInput = settings.IpAddress?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(hostInput))
+            if (!LmStudioEndpointHelper.TryBuildBaseUri(settings, out var baseUri, out var parseError) || baseUri == null)
             {
-                await ShowMessageAsync("Verbindungstest", "Bitte geben Sie eine gültige IP-Adresse ein.", DialogType.Error);
+                await ShowMessageAsync("Verbindungstest", parseError ?? "Bitte geben Sie eine gültige IP-Adresse ein.", DialogType.Error);
                 return;
             }
-
-            var scheme = Uri.UriSchemeHttp;
-            var port = settings.Port;
-            var host = hostInput;
-
-            if (Uri.TryCreate(hostInput, UriKind.Absolute, out var absoluteUri))
-            {
-                scheme = absoluteUri.Scheme;
-                host = absoluteUri.Host;
-                port = absoluteUri.IsDefaultPort ? port : absoluteUri.Port;
-            }
-            else if (hostInput.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-            {
-                host = hostInput[7..];
-            }
-            else if (hostInput.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                host = hostInput[8..];
-                scheme = Uri.UriSchemeHttps;
-            }
-            else
-            {
-                var colonIndex = host.IndexOf(':');
-                if (colonIndex >= 0 && colonIndex < host.Length - 1 &&
-                    int.TryParse(host[(colonIndex + 1)..], out var inlinePort))
-                {
-                    port = inlinePort;
-                    host = host[..colonIndex];
-                }
-            }
-
-            host = host.Trim().TrimEnd('/');
-
-            if (string.IsNullOrWhiteSpace(host))
-            {
-                await ShowMessageAsync("Verbindungstest", "Die IP-Adresse konnte nicht interpretiert werden.", DialogType.Error);
-                return;
-            }
-
-            var uriBuilder = new UriBuilder
-            {
-                Scheme = scheme,
-                Host = host,
-                Port = port,
-                Path = "/v1/models"
-            };
 
             using var httpClient = new HttpClient
             {
-                Timeout = TimeSpan.FromSeconds(5)
+                BaseAddress = baseUri,
+                Timeout = TimeSpan.FromSeconds(10)
             };
 
-            using var response = await httpClient.GetAsync(uriBuilder.Uri);
+            using var response = await httpClient.GetAsync("v1/models");
             var content = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)

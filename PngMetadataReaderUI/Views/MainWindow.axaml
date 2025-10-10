@@ -58,10 +58,16 @@
             <TextBlock Text="{Binding StatusMessage}"
                        HorizontalAlignment="Center"
                        Margin="0,0,0,10"/>
-            
-            <Button Content="Browse for PNG Image..." 
-                    HorizontalAlignment="Center"
-                    Click="BrowseButton_Click"/>
+
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Spacing="12">
+                <Button Content="Browse for PNG Image..." 
+                        Click="BrowseButton_Click"/>
+
+                <Button Content="Bildbeschreibung Prompt"
+                        Command="{Binding GeneratePromptCommand}"/>
+            </StackPanel>
         </StackPanel>
     </Grid>
 </Window>

@@ -17,7 +17,9 @@ internal static class MessageBoxService
             ContentMessage = request.Message,
             ButtonDefinitions = ButtonEnum.Ok,
             Icon = request.Type == DialogType.Error ? Icon.Error : Icon.Info,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            MaxWidth = owner.Bounds.Width
         });
 
         return messageBox.ShowWindowDialogAsync(owner);
