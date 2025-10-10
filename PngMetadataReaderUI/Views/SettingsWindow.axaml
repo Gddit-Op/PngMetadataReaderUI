@@ -80,7 +80,10 @@
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Spacing="10">
-                <Button Content="Close"
+                <Button Content="Verbindung testen"
+                        Width="160"
+                        Click="TestConnectionButton_Click"/>
+                <Button Content="Schließen"
                         Width="100"
                         Click="CloseButton_Click"/>
             </StackPanel>
