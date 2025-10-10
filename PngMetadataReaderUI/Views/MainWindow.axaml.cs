@@ -59,9 +59,8 @@ public partial class MainWindow : Window
 
     private void DragOver(object? sender, DragEventArgs e)
     {
-        var fileNames = e.Data.GetFiles();
-        if (fileNames != null &&
-            fileNames.Any(f => f.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)))
+        if (e.DataTransfer is IAsyncDataTransfer dataTransfer &&
+            dataTransfer.Contains(DataFormat.File))
         {
             e.DragEffects = DragDropEffects.Copy;
         }
@@ -71,25 +70,27 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Drop(object? sender, DragEventArgs e)
+    private async void Drop(object? sender, DragEventArgs e)
     {
         if (DataContext is MainWindowViewModel viewModel)
         {
-            var fileNames = e.Data.GetFiles()?.ToList();
-            if (fileNames != null && fileNames.Count > 0)
+            if (e.DataTransfer is IAsyncDataTransfer asyncDataTransfer)
             {
-                var pngFile = fileNames.FirstOrDefault(f =>
-                    f.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
+                var files = await asyncDataTransfer.TryGetFilesAsync();
+                if (files != null && files.Any())
+                {
+                    var pngFile = files.FirstOrDefault(f =>
+                        f.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
 
-                if (pngFile != null)
-                {
-                    viewModel.LoadImageCommand.Execute(pngFile.TryGetLocalPath());
-                }
-                else
-                {
-                    viewModel.StatusMessage = "Please drop a PNG file.";
+                    if (pngFile != null)
+                    {
+                        viewModel.LoadImageCommand.Execute(pngFile.TryGetLocalPath());
+                        return;
+                    }
                 }
             }
+
+            viewModel.StatusMessage = "Please drop a PNG file.";
         }
     }
 

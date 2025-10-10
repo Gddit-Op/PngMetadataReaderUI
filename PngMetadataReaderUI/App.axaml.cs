@@ -35,13 +35,17 @@ namespace PngMetadataReaderUI
         private void DisableAvaloniaDataAnnotationValidation()
         {
             // Get an array of plugins to remove
+            #pragma warning disable IL2026
             var dataValidationPluginsToRemove =
                 BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+            #pragma warning restore IL2026
 
             // remove each entry found
             foreach (var plugin in dataValidationPluginsToRemove)
             {
+                #pragma warning disable IL2026
                 BindingPlugins.DataValidators.Remove(plugin);
+                #pragma warning restore IL2026
             }
         }
     }
