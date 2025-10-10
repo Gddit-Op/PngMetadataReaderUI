@@ -14,15 +14,24 @@
         <viewModels:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*,Auto">
-        <TextBlock Grid.Row="0" 
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Menu Grid.Row="0">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Settings"
+                          Click="SettingsMenuItem_Click"/>
+                <MenuItem Header="E_xit"
+                          Click="ExitMenuItem_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <TextBlock Grid.Row="1" 
                    Text="Avalonia Image Drag &amp; Drop"
                    FontSize="24"
                    FontWeight="Bold"
                    HorizontalAlignment="Center"
                    Margin="0,20,0,10"/>
         
-        <Border Grid.Row="1"
+        <Border Grid.Row="2"
                 Name="DropZone"
                 Margin="20"
                 BorderBrush="Gray"
@@ -43,7 +52,7 @@
             </Panel>
         </Border>
         
-        <StackPanel Grid.Row="2" 
+        <StackPanel Grid.Row="3" 
                     Orientation="Vertical"
                     Margin="20,0,20,20">
             <TextBlock Text="{Binding StatusMessage}"

@@ -119,6 +119,17 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void SettingsMenuItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var request = new DialogRequest("Settings", "Settings are not available yet.", DialogType.Information);
+        await MessageBoxService.ShowAsync(this, request);
+    }
+
+    private void ExitMenuItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Close();
+    }
+
     private async void OnDialogRequested(object? sender, DialogRequest request)
     {
         await MessageBoxService.ShowAsync(this, request);
