@@ -179,7 +179,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await File.WriteAllTextAsync(outputPath, prompt, Encoding.UTF8);
 
             StatusMessage = $"Bildbeschreibung gespeichert: {outputPath}";
-            RequestDialog(DialogType.Information, "Bildbeschreibung erstellt", $"Die Bildbeschreibung wurde gespeichert unter:{Environment.NewLine}{outputPath}");
+            RequestDialog(DialogType.Information, "Bildbeschreibung erstellt", $"Die Bildbeschreibung wurde gespeichert.");
         }
         catch (Exception ex)
         {

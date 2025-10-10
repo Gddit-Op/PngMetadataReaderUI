@@ -71,7 +71,7 @@ internal static class WriteMetadata
             }
 
             var promptJson = promptTag.Description.ExtractFirstJson();
-            var pipeline = JsonSerializer.Deserialize<Pipeline>(promptJson, PipelineJsonContext.Default.Options);
+            var pipeline = JsonSerializer.Deserialize(promptJson, PipelineJsonContext.Default.Pipeline);
             if (pipeline == null)
             {
                 File.AppendAllText(outputPath, "Failed to deserialize pipeline JSON." + Environment.NewLine);
