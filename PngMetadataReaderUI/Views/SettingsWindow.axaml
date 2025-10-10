@@ -1,0 +1,89 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:PngMetadataReaderUI.ViewModels"
+        mc:Ignorable="d"
+        x:Class="PngMetadataReaderUI.Views.SettingsWindow"
+        x:DataType="viewModels:SettingsViewModel"
+        Title="Settings"
+        Width="360"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner">
+
+    <Border Padding="20">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+              RowSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0"
+                       Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Text="IP Address"/>
+            <TextBox Grid.Row="0"
+                     Grid.Column="1"
+                     Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     Watermark="127.0.0.1"
+                     HorizontalAlignment="Stretch"/>
+
+            <TextBlock Grid.Row="1"
+                       Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Text="Port"/>
+            <NumericUpDown Grid.Row="1"
+                           Grid.Column="1"
+                           Minimum="1"
+                           Maximum="65535"
+                           Increment="1"
+                           Value="{Binding Port, Mode=TwoWay}"
+                           FormatString="F0"/>
+
+            <TextBlock Grid.Row="2"
+                       Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Text="Temperature"/>
+            <NumericUpDown Grid.Row="2"
+                           Grid.Column="1"
+                           Minimum="0"
+                           Maximum="2"
+                           Increment="0.1"
+                           Value="{Binding Temperature, Mode=TwoWay}"
+                           FormatString="F1"/>
+
+            <TextBlock Grid.Row="3"
+                       Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Text="Max Tokens"/>
+            <NumericUpDown Grid.Row="3"
+                           Grid.Column="1"
+                           Minimum="1"
+                           Maximum="32768"
+                           Increment="1"
+                           Value="{Binding MaxTokens, Mode=TwoWay}"
+                           FormatString="F0"/>
+
+            <TextBlock Grid.Row="4"
+                       Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Text="Model ID"/>
+            <TextBox Grid.Row="4"
+                     Grid.Column="1"
+                     Text="{Binding ModelId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     Watermark="model-id"
+                     HorizontalAlignment="Stretch"/>
+
+            <StackPanel Grid.Row="5"
+                        Grid.ColumnSpan="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="10">
+                <Button Content="Close"
+                        Width="100"
+                        Click="CloseButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

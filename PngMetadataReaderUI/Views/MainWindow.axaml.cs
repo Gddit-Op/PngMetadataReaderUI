@@ -121,8 +121,16 @@ public partial class MainWindow : Window
 
     private async void SettingsMenuItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var request = new DialogRequest("Settings", "Settings are not available yet.", DialogType.Information);
-        await MessageBoxService.ShowAsync(this, request);
+        var settings = SettingsService.Load();
+        var settingsViewModel = new SettingsViewModel();
+        settingsViewModel.Apply(settings);
+
+        var window = new SettingsWindow
+        {
+            DataContext = settingsViewModel
+        };
+
+        await window.ShowDialog(this);
     }
 
     private void ExitMenuItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
