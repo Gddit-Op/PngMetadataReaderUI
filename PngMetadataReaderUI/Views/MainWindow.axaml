@@ -15,7 +15,7 @@
         <viewModels:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto">
         <Menu Grid.Row="0">
             <MenuItem Header="_File">
                 <MenuItem Header="_Settings"
@@ -25,14 +25,7 @@
             </MenuItem>
         </Menu>
 
-        <TextBlock Grid.Row="1" 
-                   Text="Image Drag &amp; Drop - Read Metadata"
-                   FontSize="14"
-                   FontWeight="Bold"
-                   HorizontalAlignment="Center"
-                   Margin="0,20,0,10"/>
-        
-        <Border Grid.Row="2"
+        <Border Grid.Row="1"
                 Name="DropZone"
                 Margin="20"
                 BorderBrush="Gray"
@@ -53,7 +46,7 @@
                            FontSize="18"
                            Foreground="DarkGray"/>
 
-                <ScrollViewer Margin="10"
+                <ScrollViewer Margin="0"
                               x:Name="ImageScrollViewer"
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto"
@@ -76,7 +69,7 @@
             </Grid>
         </Border>
         
-        <StackPanel Grid.Row="3" 
+        <StackPanel Grid.Row="2" 
                     Orientation="Vertical"
                     Margin="20,0,20,20">
             <TextBlock Text="{Binding StatusMessage}"
