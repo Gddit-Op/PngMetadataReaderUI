@@ -142,7 +142,7 @@ public partial class MainWindowViewModel : ViewModelBase
             using var httpClient = new HttpClient
             {
                 BaseAddress = baseUri,
-                Timeout = TimeSpan.FromSeconds(10)
+                Timeout = TimeSpan.FromSeconds(30)
             };
 
             using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "v1/chat/completions")
