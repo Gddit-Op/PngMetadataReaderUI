@@ -14,10 +14,12 @@ namespace PngMetadataReaderUI.Views;
 public partial class MainWindow : Window
 {
     private MainWindowViewModel? _viewModel;
+    private ScrollViewer? _imageScrollViewer;
 
     public MainWindow()
     {
         InitializeComponent();
+        _imageScrollViewer = this.FindControl<ScrollViewer>("ImageScrollViewer");
 #if DEBUG
         this.AttachDevTools();
 #endif
@@ -37,6 +39,14 @@ public partial class MainWindow : Window
         if (_viewModel != null)
         {
             _viewModel.DialogRequested += OnDialogRequested;
+            if (_imageScrollViewer != null)
+            {
+                var size = _imageScrollViewer.Bounds.Size;
+                if (size.Width > 0 && size.Height > 0)
+                {
+                    _viewModel.UpdateViewportSize(size.Width, size.Height);
+                }
+            }
         }
 
         base.OnDataContextChanged(e);
@@ -143,5 +153,44 @@ public partial class MainWindow : Window
     private async void OnDialogRequested(object? sender, DialogRequest request)
     {
         await MessageBoxService.ShowAsync(this, request);
+    }
+
+    private void ImageScrollViewer_SizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (_viewModel == null)
+        {
+            return;
+        }
+
+        var newSize = e.NewSize;
+        if (newSize.Width > 0 && newSize.Height > 0)
+        {
+            _viewModel.UpdateViewportSize(newSize.Width, newSize.Height);
+        }
+    }
+
+    private void DropZone_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (_viewModel?.Image == null)
+        {
+            return;
+        }
+
+        if (e.Delta.Y > 0)
+        {
+            if (_viewModel.ZoomInCommand.CanExecute(null))
+            {
+                _viewModel.ZoomInCommand.Execute(null);
+                e.Handled = true;
+            }
+        }
+        else if (e.Delta.Y < 0)
+        {
+            if (_viewModel.ZoomOutCommand.CanExecute(null))
+            {
+                _viewModel.ZoomOutCommand.Execute(null);
+                e.Handled = true;
+            }
+        }
     }
 }

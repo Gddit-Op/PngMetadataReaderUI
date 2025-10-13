@@ -23,7 +23,20 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string? _browseFilePath;
 
+    [ObservableProperty]
+    private double _imageZoom = 1.0;
+
     private bool _isGeneratingPrompt;
+
+    private const double MinZoom = 0.2;
+    private const double MaxZoom = 5.0;
+    private const double ZoomStep = 0.2;
+    private const double ZoomEpsilon = 0.001;
+
+    private double _fitZoom = 1.0;
+    private bool _userAdjustedZoom;
+    private double _viewportWidth;
+    private double _viewportHeight;
 
     private const string PromptSystemInstruction =
         "You are an AI assistant specialized in generating detailed and creative image prompts for AI image generation. " +
@@ -37,6 +50,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel()
     {
+        UpdateZoomCommandStates();
     }
 
     [RelayCommand]
@@ -72,6 +86,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Image?.Dispose();
 
             Image = new Bitmap(filePath);
+
             StatusMessage = $"Image loaded: {Path.GetFileName(filePath)}";
 
             var extractionResult = filePath.WriteMetadataToTxt();
@@ -355,6 +370,136 @@ public partial class MainWindowViewModel : ViewModelBase
     private void RequestDialog(DialogType type, string title, string message)
     {
         DialogRequested?.Invoke(this, new DialogRequest(title, message, type));
+    }
+
+    [RelayCommand(CanExecute = nameof(CanZoomIn))]
+    private void ZoomIn()
+    {
+        if (Image == null)
+        {
+            return;
+        }
+
+        _userAdjustedZoom = true;
+        SetAbsoluteZoom(ImageZoom + ZoomStep);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanZoomOut))]
+    private void ZoomOut()
+    {
+        if (Image == null)
+        {
+            return;
+        }
+
+        _userAdjustedZoom = true;
+        SetAbsoluteZoom(ImageZoom - ZoomStep);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanResetZoom))]
+    private void ResetZoom()
+    {
+        if (Image == null)
+        {
+            return;
+        }
+
+        _userAdjustedZoom = false;
+        SetAbsoluteZoom(_fitZoom, clampToUserRange: false);
+    }
+
+    partial void OnImageChanged(Bitmap? value)
+    {
+        if (value is null)
+        {
+            _fitZoom = 1.0;
+            _userAdjustedZoom = false;
+            if (Math.Abs(ImageZoom - 1.0) > ZoomEpsilon)
+            {
+                ImageZoom = 1.0;
+            }
+
+            UpdateZoomCommandStates();
+            return;
+        }
+
+        _userAdjustedZoom = false;
+        RecalculateFitZoom();
+    }
+
+    public void UpdateViewportSize(double width, double height)
+    {
+        _viewportWidth = width;
+        _viewportHeight = height;
+        RecalculateFitZoom();
+    }
+
+    private bool CanZoomIn() => Image != null && ImageZoom < MaxZoom - ZoomEpsilon;
+
+    private bool CanZoomOut() => Image != null && ImageZoom > MinZoom + ZoomEpsilon;
+
+    private bool CanResetZoom() => Image != null && Math.Abs(ImageZoom - _fitZoom) > ZoomEpsilon;
+
+    private void SetAbsoluteZoom(double target, bool clampToUserRange = true)
+    {
+        double clamped;
+        if (clampToUserRange)
+        {
+            clamped = Math.Clamp(target, MinZoom, MaxZoom);
+        }
+        else
+        {
+            clamped = Math.Clamp(target, 0.01, MaxZoom);
+        }
+
+        if (Math.Abs(ImageZoom - clamped) < ZoomEpsilon)
+        {
+            UpdateZoomCommandStates();
+            return;
+        }
+
+        ImageZoom = Math.Round(clamped, 3);
+        UpdateZoomCommandStates();
+    }
+
+    private void RecalculateFitZoom()
+    {
+        if (Image == null || _viewportWidth <= 0 || _viewportHeight <= 0)
+        {
+            UpdateZoomCommandStates();
+            return;
+        }
+
+        var size = Image.Size;
+        if (size.Width <= 0 || size.Height <= 0)
+        {
+            UpdateZoomCommandStates();
+            return;
+        }
+
+        var fit = Math.Min(_viewportWidth / size.Width, _viewportHeight / size.Height);
+        if (double.IsNaN(fit) || double.IsInfinity(fit) || fit <= 0)
+        {
+            fit = 1.0;
+        }
+
+        _fitZoom = Math.Clamp(fit, 0.01, MaxZoom);
+
+        if (!_userAdjustedZoom)
+        {
+            SetAbsoluteZoom(_fitZoom, clampToUserRange: false);
+        }
+        else
+        {
+            UpdateZoomCommandStates();
+        }
+    }
+
+    private void UpdateZoomCommandStates()
+    {
+        ZoomInCommand.NotifyCanExecuteChanged();
+        ZoomOutCommand.NotifyCanExecuteChanged();
+        ResetZoomCommand.NotifyCanExecuteChanged();
     }
 
     private static string GetDisplayName(string path)
