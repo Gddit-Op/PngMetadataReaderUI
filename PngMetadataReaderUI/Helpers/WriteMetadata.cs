@@ -34,9 +34,11 @@ internal static class WriteMetadata
 
             if (textualTags.Count == 0)
             {
-                File.AppendAllText(outputPath, "No textual metadata found in image." + Environment.NewLine);
+                DeleteOutputFileIfExists(outputPath);
                 return MetadataExtractionResult.NoMetadata("Keine Metadaten im Bild gefunden.");
             }
+
+            var builder = new StringBuilder();
 
             var promptTags = textualTags
                 .Where(tag => ContainsKeyword(tag.Description!, keyword))
@@ -45,9 +47,8 @@ internal static class WriteMetadata
             foreach (var metadataTag in promptTags)
             {
                 var payload = ExtractKeywordPayload(metadataTag.Description!, keyword);
-                File.AppendAllText(
-                    outputPath,
-                    $"Raw-Output '{keyword}' ({metadataTag.DirectoryName}/{metadataTag.Name}): {payload}{Environment.NewLine}");
+                builder.AppendLine(
+                    $"Raw-Output '{keyword}' ({metadataTag.DirectoryName}/{metadataTag.Name}): {payload}");
             }
 
             var workflowResult = TryWriteWorkflowJson(textualTags, imagePath);
@@ -57,7 +58,7 @@ internal static class WriteMetadata
             {
                 if (!string.IsNullOrEmpty(workflowResult.Message))
                 {
-                    File.AppendAllText(outputPath, workflowResult.Message + Environment.NewLine);
+                    builder.AppendLine(workflowResult.Message);
                 }
 
                 workflowFailed = !workflowResult.IsSuccess;
@@ -67,8 +68,7 @@ internal static class WriteMetadata
             var promptTag = promptTags.FirstOrDefault();
             if (promptTag == null)
             {
-                File.AppendAllText(outputPath,
-                    $"{Environment.NewLine}No '{keyword}' entry found in image metadata.{Environment.NewLine}");
+                DeleteOutputFileIfExists(outputPath);
                 return MetadataExtractionResult.NoMetadata($"Kein '{keyword}'-Eintrag im Bild gefunden.");
             }
 
@@ -77,22 +77,22 @@ internal static class WriteMetadata
             var pipeline = JsonSerializer.Deserialize(promptJson, PipelineJsonContext.Default.Pipeline);
             if (pipeline == null)
             {
-                File.AppendAllText(outputPath, "Failed to deserialize pipeline JSON." + Environment.NewLine);
+                builder.AppendLine("Failed to deserialize pipeline JSON.");
+                File.WriteAllText(outputPath, builder.ToString());
                 return MetadataExtractionResult.Error("Die Prompt-Metadaten konnten nicht verarbeitet werden.");
             }
 
-            using var writer = new StreamWriter(outputPath, append: true);
             foreach (var kvp in pipeline)
             {
-                writer.WriteLine($"Node ID = {kvp.Key}");
-                writer.WriteLine($"  class_type = {kvp.Value.ClassType}");
-                writer.WriteLine($"  title      = {kvp.Value.Meta?.Title}");
-                writer.WriteLine("  inputs:");
+                builder.AppendLine($"Node ID = {kvp.Key}");
+                builder.AppendLine($"  class_type = {kvp.Value.ClassType}");
+                builder.AppendLine($"  title      = {kvp.Value.Meta?.Title}");
+                builder.AppendLine("  inputs:");
                 foreach (var input in kvp.Value.Inputs)
                 {
-                    writer.WriteLine($"    {input.Key} = {input.Value.GetRawText()}");
+                    builder.AppendLine($"    {input.Key} = {input.Value.GetRawText()}");
                 }
-                writer.WriteLine();
+                builder.AppendLine();
             }
 
             var baseMessage = $"Metadaten gespeichert in {Path.GetFileName(outputPath)}.";
@@ -109,6 +109,7 @@ internal static class WriteMetadata
                 return MetadataExtractionResult.Error(errorMessage);
             }
 
+            File.WriteAllText(outputPath, builder.ToString());
             return MetadataExtractionResult.Success(baseMessage);
         }
         catch (Exception ex)
@@ -165,6 +166,14 @@ internal static class WriteMetadata
         }
 
         return description[index..].Trim();
+    }
+
+    private static void DeleteOutputFileIfExists(string path)
+    {
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
     }
 
     private readonly struct WorkflowSaveResult
