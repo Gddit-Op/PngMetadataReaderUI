@@ -39,6 +39,10 @@
                 BorderThickness="2"
                 DragDrop.AllowDrop="True"
                 PointerWheelChanged="DropZone_PointerWheelChanged"
+                PointerPressed="DropZone_PointerPressed"
+                PointerReleased="DropZone_PointerReleased"
+                PointerMoved="DropZone_PointerMoved"
+                PointerCaptureLost="DropZone_PointerCaptureLost"
                 Background="{Binding Image, Converter={x:Static ObjectConverters.IsNotNull}, ConverterParameter=Transparent, FallbackValue=LightGray}">
             <Grid>
                 <TextBlock Text="Drop image (PNG/JPG/WebP) here"

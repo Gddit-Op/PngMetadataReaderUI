@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using PngMetadataReaderUI.Helpers;
 using PngMetadataReaderUI.Models;
 using PngMetadataReaderUI.ViewModels;
@@ -15,6 +16,9 @@ public partial class MainWindow : Window
 {
     private MainWindowViewModel? _viewModel;
     private ScrollViewer? _imageScrollViewer;
+    private bool _isPanning;
+    private Point _panStartPoint;
+    private Vector _panStartOffset;
 
     public MainWindow()
     {
@@ -171,26 +175,140 @@ public partial class MainWindow : Window
 
     private void DropZone_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
-        if (_viewModel?.Image == null)
+        if (_viewModel?.Image == null || _imageScrollViewer is null)
         {
             return;
         }
 
-        if (e.Delta.Y > 0)
+        var scrollViewer = _imageScrollViewer;
+        var zoomInRequested = e.Delta.Y > 0 && _viewModel.ZoomInCommand.CanExecute(null);
+        var zoomOutRequested = e.Delta.Y < 0 && _viewModel.ZoomOutCommand.CanExecute(null);
+
+        if (!zoomInRequested && !zoomOutRequested)
         {
-            if (_viewModel.ZoomInCommand.CanExecute(null))
-            {
-                _viewModel.ZoomInCommand.Execute(null);
-                e.Handled = true;
-            }
+            return;
         }
-        else if (e.Delta.Y < 0)
+
+        var oldZoom = _viewModel.ImageZoom;
+        if (oldZoom <= 0)
         {
-            if (_viewModel.ZoomOutCommand.CanExecute(null))
-            {
-                _viewModel.ZoomOutCommand.Execute(null);
-                e.Handled = true;
-            }
+            return;
         }
+
+        var viewportPosition = e.GetPosition(scrollViewer);
+        var currentOffset = scrollViewer.Offset;
+
+        var contentX = (currentOffset.X + viewportPosition.X) / oldZoom;
+        var contentY = (currentOffset.Y + viewportPosition.Y) / oldZoom;
+
+        if (zoomInRequested)
+        {
+            _viewModel.ZoomInCommand.Execute(null);
+        }
+        else if (zoomOutRequested)
+        {
+            _viewModel.ZoomOutCommand.Execute(null);
+        }
+
+        var newZoom = _viewModel.ImageZoom;
+        if (Math.Abs(newZoom - oldZoom) < double.Epsilon)
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            var viewport = scrollViewer.Viewport;
+            var extent = scrollViewer.Extent;
+
+            var targetOffsetX = contentX * newZoom - viewportPosition.X;
+            var targetOffsetY = contentY * newZoom - viewportPosition.Y;
+
+            if (!double.IsFinite(targetOffsetX) || !double.IsFinite(targetOffsetY))
+            {
+                return;
+            }
+
+            var maxOffsetX = Math.Max(0, extent.Width - viewport.Width);
+            var maxOffsetY = Math.Max(0, extent.Height - viewport.Height);
+
+            targetOffsetX = Math.Clamp(targetOffsetX, 0, maxOffsetX);
+            targetOffsetY = Math.Clamp(targetOffsetY, 0, maxOffsetY);
+
+            scrollViewer.Offset = new Vector(targetOffsetX, targetOffsetY);
+        }, DispatcherPriority.Background);
+
+        e.Handled = true;
+    }
+
+    private void DropZone_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_imageScrollViewer is null || _viewModel?.Image is null)
+        {
+            return;
+        }
+
+        var props = e.GetCurrentPoint(_imageScrollViewer).Properties;
+        if (!props.IsMiddleButtonPressed)
+        {
+            return;
+        }
+
+        e.Pointer.Capture(_imageScrollViewer);
+        _isPanning = true;
+        _panStartPoint = e.GetPosition(_imageScrollViewer);
+        _panStartOffset = _imageScrollViewer.Offset;
+        e.Handled = true;
+    }
+
+    private void DropZone_PointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!_isPanning || _imageScrollViewer is null || e.Pointer.Captured != _imageScrollViewer)
+        {
+            return;
+        }
+
+        var position = e.GetPosition(_imageScrollViewer);
+        var delta = position - _panStartPoint;
+
+        var targetX = _panStartOffset.X - delta.X;
+        var targetY = _panStartOffset.Y - delta.Y;
+
+        var extent = _imageScrollViewer.Extent;
+        var viewport = _imageScrollViewer.Viewport;
+
+        var maxOffsetX = Math.Max(0, extent.Width - viewport.Width);
+        var maxOffsetY = Math.Max(0, extent.Height - viewport.Height);
+
+        targetX = Math.Clamp(targetX, 0, maxOffsetX);
+        targetY = Math.Clamp(targetY, 0, maxOffsetY);
+
+        _imageScrollViewer.Offset = new Vector(targetX, targetY);
+        e.Handled = true;
+    }
+
+    private void DropZone_PointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!_isPanning || _imageScrollViewer is null || e.InitialPressMouseButton != MouseButton.Middle)
+        {
+            return;
+        }
+
+        ReleasePan(e.Pointer);
+        e.Handled = true;
+    }
+
+    private void DropZone_PointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        if (_isPanning && _imageScrollViewer != null)
+        {
+            ReleasePan(e.Pointer);
+        }
+    }
+
+    private void ReleasePan(IPointer pointer)
+    {
+        pointer.Capture(null);
+        _isPanning = false;
     }
 }
