@@ -15,7 +15,7 @@
         <viewModels:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
         <Menu Grid.Row="0">
             <MenuItem Header="_File">
                 <MenuItem Header="_Settings"
@@ -25,7 +25,27 @@
             </MenuItem>
         </Menu>
 
-        <Border Grid.Row="1"
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="32,0,32,0"
+                    Spacing="8">
+            <Border Background="#F0F0F0"
+                    CornerRadius="4"
+                    Padding="6,4"
+                    Opacity="0.9">
+                <TextBlock Text="{Binding ImageZoom, StringFormat='Zoom: {0:P0}'}"
+                           VerticalAlignment="Center"/>
+            </Border>
+            <Button Content="Zoom -"
+                    Command="{Binding ZoomOutCommand}"/>
+            <Button Content="Zoom +"
+                    Command="{Binding ZoomInCommand}"/>
+            <Button Content="Reset Zoom"
+                    Command="{Binding ResetZoomCommand}"/>
+        </StackPanel>
+
+        <Border Grid.Row="2"
                 Name="DropZone"
                 Margin="20"
                 BorderBrush="Gray"
@@ -69,7 +89,7 @@
             </Grid>
         </Border>
         
-        <StackPanel Grid.Row="2" 
+        <StackPanel Grid.Row="3" 
                     Orientation="Vertical"
                     Margin="20,0,20,20">
             <TextBlock Text="{Binding StatusMessage}"
@@ -84,21 +104,6 @@
 
                 <Button Content="Bildbeschreibung Prompt"
                         Command="{Binding GeneratePromptCommand}"/>
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Spacing="8"
-                        Margin="0,12,0,0">
-                <TextBlock Text="{Binding ImageZoom, StringFormat='Zoom: {0:P0}'}"
-                           VerticalAlignment="Center"
-                           Margin="0,0,8,0"/>
-                <Button Content="Zoom -"
-                        Command="{Binding ZoomOutCommand}"/>
-                <Button Content="Zoom +"
-                        Command="{Binding ZoomInCommand}"/>
-                <Button Content="Reset Zoom"
-                        Command="{Binding ResetZoomCommand}"/>
             </StackPanel>
         </StackPanel>
     </Grid>
