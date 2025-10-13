@@ -39,7 +39,6 @@
                 BorderThickness="2"
                 DragDrop.AllowDrop="True"
                 Focusable="True"
-                PointerWheelChanged="DropZone_PointerWheelChanged"
                 PointerPressed="DropZone_PointerPressed"
                 PointerReleased="DropZone_PointerReleased"
                 PointerMoved="DropZone_PointerMoved"

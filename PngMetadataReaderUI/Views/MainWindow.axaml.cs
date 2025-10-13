@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -16,6 +17,7 @@ public partial class MainWindow : Window
 {
     private MainWindowViewModel? _viewModel;
     private ScrollViewer? _imageScrollViewer;
+    private Border? _dropZone;
     private bool _isPanning;
     private Point _panStartPoint;
     private Vector _panStartOffset;
@@ -24,6 +26,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _imageScrollViewer = this.FindControl<ScrollViewer>("ImageScrollViewer");
+        _dropZone = this.FindControl<Border>("DropZone");
+        _dropZone?.AddHandler(InputElement.PointerWheelChangedEvent, DropZone_PointerWheelChanged, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
 #if DEBUG
         this.AttachDevTools();
 #endif
@@ -175,6 +179,11 @@ public partial class MainWindow : Window
 
     private void DropZone_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
+        if (e.Handled)
+        {
+            return;
+        }
+
         if (_viewModel?.Image == null || _imageScrollViewer is null)
         {
             return;
@@ -196,6 +205,10 @@ public partial class MainWindow : Window
         {
             return;
         }
+
+        var viewport = scrollViewer.Viewport;
+        var currentOffset = scrollViewer.Offset;
+        var viewportPosition = e.GetPosition(scrollViewer);
 
         var deltaSign = Math.Sign(primaryDelta);
         var steps = Math.Max(1, (int)Math.Round(Math.Abs(primaryDelta)));
@@ -245,10 +258,6 @@ public partial class MainWindow : Window
         {
             return;
         }
-
-        var viewport = scrollViewer.Viewport;
-        var viewportPosition = e.GetPosition(scrollViewer);
-        var currentOffset = scrollViewer.Offset;
 
         var imageWidth = (double)imageSize.Width;
         var imageHeight = (double)imageSize.Height;
