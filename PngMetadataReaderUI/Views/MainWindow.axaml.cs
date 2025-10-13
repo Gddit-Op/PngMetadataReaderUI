@@ -195,11 +195,30 @@ public partial class MainWindow : Window
             return;
         }
 
+        var imageSize = _viewModel.Image.Size;
+        if (imageSize.Width <= 0 || imageSize.Height <= 0)
+        {
+            return;
+        }
+
+        var viewport = scrollViewer.Viewport;
         var viewportPosition = e.GetPosition(scrollViewer);
         var currentOffset = scrollViewer.Offset;
 
-        var contentX = (currentOffset.X + viewportPosition.X) / oldZoom;
-        var contentY = (currentOffset.Y + viewportPosition.Y) / oldZoom;
+        var imageWidth = (double)imageSize.Width;
+        var imageHeight = (double)imageSize.Height;
+
+        var contentWidth = imageWidth * oldZoom;
+        var contentHeight = imageHeight * oldZoom;
+
+        var marginX = Math.Max(0, (viewport.Width - contentWidth) / 2);
+        var marginY = Math.Max(0, (viewport.Height - contentHeight) / 2);
+
+        var contentX = (currentOffset.X + viewportPosition.X - marginX) / oldZoom;
+        var contentY = (currentOffset.Y + viewportPosition.Y - marginY) / oldZoom;
+
+        contentX = Math.Clamp(contentX, 0, imageWidth);
+        contentY = Math.Clamp(contentY, 0, imageHeight);
 
         if (zoomInRequested)
         {
@@ -216,33 +235,29 @@ public partial class MainWindow : Window
             return;
         }
 
-        Dispatcher.UIThread.Post(() =>
-        {
-            var viewport = scrollViewer.Viewport;
-            var extent = scrollViewer.Extent;
+        var newContentWidth = imageWidth * newZoom;
+        var newContentHeight = imageHeight * newZoom;
 
-            var targetOffsetX = contentX * newZoom - viewportPosition.X;
-            var targetOffsetY = contentY * newZoom - viewportPosition.Y;
+        var newMarginX = Math.Max(0, (viewport.Width - newContentWidth) / 2);
+        var newMarginY = Math.Max(0, (viewport.Height - newContentHeight) / 2);
 
-            if (!double.IsFinite(targetOffsetX) || !double.IsFinite(targetOffsetY))
-            {
-                return;
-            }
+        var targetOffsetX = contentX * newZoom + newMarginX - viewportPosition.X;
+        var targetOffsetY = contentY * newZoom + newMarginY - viewportPosition.Y;
 
-            var maxOffsetX = Math.Max(0, extent.Width - viewport.Width);
-            var maxOffsetY = Math.Max(0, extent.Height - viewport.Height);
-
-            targetOffsetX = Math.Clamp(targetOffsetX, 0, maxOffsetX);
-            targetOffsetY = Math.Clamp(targetOffsetY, 0, maxOffsetY);
-
-            scrollViewer.Offset = new Vector(targetOffsetX, targetOffsetY);
-        }, DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(
+            () => SetScrollOffset(targetOffsetX, targetOffsetY),
+            DispatcherPriority.Background);
 
         e.Handled = true;
     }
 
     private void DropZone_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (sender is IInputElement inputElement)
+        {
+            inputElement.Focus();
+        }
+
         if (_imageScrollViewer is null || _viewModel?.Image is null)
         {
             return;
@@ -274,16 +289,7 @@ public partial class MainWindow : Window
         var targetX = _panStartOffset.X - delta.X;
         var targetY = _panStartOffset.Y - delta.Y;
 
-        var extent = _imageScrollViewer.Extent;
-        var viewport = _imageScrollViewer.Viewport;
-
-        var maxOffsetX = Math.Max(0, extent.Width - viewport.Width);
-        var maxOffsetY = Math.Max(0, extent.Height - viewport.Height);
-
-        targetX = Math.Clamp(targetX, 0, maxOffsetX);
-        targetY = Math.Clamp(targetY, 0, maxOffsetY);
-
-        _imageScrollViewer.Offset = new Vector(targetX, targetY);
+        SetScrollOffset(targetX, targetY);
         e.Handled = true;
     }
 
@@ -304,6 +310,86 @@ public partial class MainWindow : Window
         {
             ReleasePan(e.Pointer);
         }
+    }
+
+    private void DropZone_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (_imageScrollViewer is null || _viewModel?.Image is null)
+        {
+            return;
+        }
+
+        var viewport = _imageScrollViewer.Viewport;
+        if (viewport.Width <= 0 || viewport.Height <= 0)
+        {
+            return;
+        }
+
+        var stepX = Math.Max(10, viewport.Width * 0.1);
+        var stepY = Math.Max(10, viewport.Height * 0.1);
+
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            stepX *= 2;
+            stepY *= 2;
+        }
+        else if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            stepX *= 0.5;
+            stepY *= 0.5;
+        }
+
+        var offset = _imageScrollViewer.Offset;
+        var targetX = offset.X;
+        var targetY = offset.Y;
+
+        switch (e.Key)
+        {
+            case Key.Left:
+                targetX -= stepX;
+                e.Handled = true;
+                break;
+            case Key.Right:
+                targetX += stepX;
+                e.Handled = true;
+                break;
+            case Key.Up:
+                targetY -= stepY;
+                e.Handled = true;
+                break;
+            case Key.Down:
+                targetY += stepY;
+                e.Handled = true;
+                break;
+            default:
+                return;
+        }
+
+        SetScrollOffset(targetX, targetY);
+    }
+
+    private void SetScrollOffset(double targetOffsetX, double targetOffsetY)
+    {
+        if (_imageScrollViewer is null)
+        {
+            return;
+        }
+
+        if (!double.IsFinite(targetOffsetX) || !double.IsFinite(targetOffsetY))
+        {
+            return;
+        }
+
+        var viewport = _imageScrollViewer.Viewport;
+        var extent = _imageScrollViewer.Extent;
+
+        var maxOffsetX = Math.Max(0, extent.Width - viewport.Width);
+        var maxOffsetY = Math.Max(0, extent.Height - viewport.Height);
+
+        var clampedX = Math.Clamp(targetOffsetX, 0, maxOffsetX);
+        var clampedY = Math.Clamp(targetOffsetY, 0, maxOffsetY);
+
+        _imageScrollViewer.Offset = new Vector(clampedX, clampedY);
     }
 
     private void ReleasePan(IPointer pointer)

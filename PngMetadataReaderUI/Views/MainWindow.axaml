@@ -38,11 +38,13 @@
                 BorderBrush="Gray"
                 BorderThickness="2"
                 DragDrop.AllowDrop="True"
+                Focusable="True"
                 PointerWheelChanged="DropZone_PointerWheelChanged"
                 PointerPressed="DropZone_PointerPressed"
                 PointerReleased="DropZone_PointerReleased"
                 PointerMoved="DropZone_PointerMoved"
                 PointerCaptureLost="DropZone_PointerCaptureLost"
+                KeyDown="DropZone_KeyDown"
                 Background="{Binding Image, Converter={x:Static ObjectConverters.IsNotNull}, ConverterParameter=Transparent, FallbackValue=LightGray}">
             <Grid>
                 <TextBlock Text="Drop image (PNG/JPG/WebP) here"
@@ -60,13 +62,15 @@
                               VerticalContentAlignment="Center"
                               SizeChanged="ImageScrollViewer_SizeChanged"
                               IsVisible="{Binding Image, Converter={x:Static ObjectConverters.IsNotNull}}">
-                    <controls:LayoutTransformControl HorizontalAlignment="Center"
+                    <controls:LayoutTransformControl x:Name="ZoomContainer"
+                                                     HorizontalAlignment="Center"
                                                      VerticalAlignment="Center">
                         <controls:LayoutTransformControl.LayoutTransform>
                             <ScaleTransform ScaleX="{Binding ImageZoom}"
                                             ScaleY="{Binding ImageZoom}"/>
                         </controls:LayoutTransformControl.LayoutTransform>
-                        <Image Source="{Binding Image}"
+                        <Image x:Name="ImageElement"
+                               Source="{Binding Image}"
                                Stretch="None"/>
                     </controls:LayoutTransformControl>
                 </ScrollViewer>
