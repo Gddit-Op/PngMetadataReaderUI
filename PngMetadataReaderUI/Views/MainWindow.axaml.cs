@@ -181,16 +181,61 @@ public partial class MainWindow : Window
         }
 
         var scrollViewer = _imageScrollViewer;
-        var zoomInRequested = e.Delta.Y > 0 && _viewModel.ZoomInCommand.CanExecute(null);
-        var zoomOutRequested = e.Delta.Y < 0 && _viewModel.ZoomOutCommand.CanExecute(null);
+        var deltaVector = e.Delta;
+        var primaryDelta = Math.Abs(deltaVector.Y) >= Math.Abs(deltaVector.X)
+            ? deltaVector.Y
+            : deltaVector.X;
 
-        if (!zoomInRequested && !zoomOutRequested)
+        if (Math.Abs(primaryDelta) < double.Epsilon)
         {
             return;
         }
 
         var oldZoom = _viewModel.ImageZoom;
         if (oldZoom <= 0)
+        {
+            return;
+        }
+
+        var deltaSign = Math.Sign(primaryDelta);
+        var steps = Math.Max(1, (int)Math.Round(Math.Abs(primaryDelta)));
+
+        var zoomPerformed = false;
+        for (var i = 0; i < steps; i++)
+        {
+            if (deltaSign > 0)
+            {
+                if (_viewModel.ZoomInCommand.CanExecute(null))
+                {
+                    _viewModel.ZoomInCommand.Execute(null);
+                    zoomPerformed = true;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            else if (deltaSign < 0)
+            {
+                if (_viewModel.ZoomOutCommand.CanExecute(null))
+                {
+                    _viewModel.ZoomOutCommand.Execute(null);
+                    zoomPerformed = true;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        if (!zoomPerformed)
+        {
+            return;
+        }
+
+        var newZoom = _viewModel.ImageZoom;
+        if (Math.Abs(newZoom - oldZoom) < double.Epsilon)
         {
             return;
         }
@@ -219,21 +264,6 @@ public partial class MainWindow : Window
 
         contentX = Math.Clamp(contentX, 0, imageWidth);
         contentY = Math.Clamp(contentY, 0, imageHeight);
-
-        if (zoomInRequested)
-        {
-            _viewModel.ZoomInCommand.Execute(null);
-        }
-        else if (zoomOutRequested)
-        {
-            _viewModel.ZoomOutCommand.Execute(null);
-        }
-
-        var newZoom = _viewModel.ImageZoom;
-        if (Math.Abs(newZoom - oldZoom) < double.Epsilon)
-        {
-            return;
-        }
 
         var newContentWidth = imageWidth * newZoom;
         var newContentHeight = imageHeight * newZoom;
@@ -264,7 +294,7 @@ public partial class MainWindow : Window
         }
 
         var props = e.GetCurrentPoint(_imageScrollViewer).Properties;
-        if (!props.IsMiddleButtonPressed)
+        if (!props.IsLeftButtonPressed)
         {
             return;
         }
@@ -295,7 +325,7 @@ public partial class MainWindow : Window
 
     private void DropZone_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (!_isPanning || _imageScrollViewer is null || e.InitialPressMouseButton != MouseButton.Middle)
+        if (!_isPanning || _imageScrollViewer is null || e.InitialPressMouseButton != MouseButton.Left)
         {
             return;
         }
