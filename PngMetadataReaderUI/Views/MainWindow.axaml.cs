@@ -28,11 +28,12 @@ public partial class MainWindow : Window
         _imageScrollViewer = this.FindControl<ScrollViewer>("ImageScrollViewer");
         _dropZone = this.FindControl<Border>("DropZone");
         _dropZone?.AddHandler(InputElement.PointerWheelChangedEvent, DropZone_PointerWheelChanged, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
-#if DEBUG
+        #if DEBUG
         this.AttachDevTools();
-#endif
+        #endif
         AddHandler(DragDrop.DragOverEvent, DragOver);
         AddHandler(DragDrop.DropEvent, Drop);
+        AddHandler(InputElement.KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -353,7 +354,29 @@ public partial class MainWindow : Window
 
     private void DropZone_KeyDown(object? sender, KeyEventArgs e)
     {
+        HandlePanKey(e);
+    }
+
+    private void OnWindowKeyDown(object? sender, KeyEventArgs e) => HandlePanKey(e);
+
+    private void HandlePanKey(KeyEventArgs e)
+    {
+        if (e.Handled)
+        {
+            return;
+        }
+
         if (_imageScrollViewer is null || _viewModel?.Image is null)
+        {
+            return;
+        }
+
+        if (e.Source is TextBox { IsReadOnly: false })
+        {
+            return;
+        }
+
+        if (e.Source is ComboBox { IsDropDownOpen: true })
         {
             return;
         }
@@ -386,25 +409,22 @@ public partial class MainWindow : Window
         {
             case Key.Left:
                 targetX -= stepX;
-                e.Handled = true;
                 break;
             case Key.Right:
                 targetX += stepX;
-                e.Handled = true;
                 break;
             case Key.Up:
                 targetY -= stepY;
-                e.Handled = true;
                 break;
             case Key.Down:
                 targetY += stepY;
-                e.Handled = true;
                 break;
             default:
                 return;
         }
 
         SetScrollOffset(targetX, targetY);
+        e.Handled = true;
     }
 
     private void SetScrollOffset(double targetOffsetX, double targetOffsetY)
