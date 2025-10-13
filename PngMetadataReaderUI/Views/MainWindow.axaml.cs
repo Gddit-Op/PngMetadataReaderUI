@@ -4,7 +4,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
-using Avalonia.Threading;
 using PngMetadataReaderUI.Helpers;
 using PngMetadataReaderUI.Models;
 using PngMetadataReaderUI.ViewModels;
@@ -284,9 +283,13 @@ public partial class MainWindow : Window
         var targetOffsetX = contentX * newZoom + newMarginX - viewportPosition.X;
         var targetOffsetY = contentY * newZoom + newMarginY - viewportPosition.Y;
 
-        Dispatcher.UIThread.Post(
-            () => SetScrollOffset(targetOffsetX, targetOffsetY),
-            DispatcherPriority.Background);
+        var maxOffsetX = Math.Max(0, newContentWidth - viewport.Width);
+        var maxOffsetY = Math.Max(0, newContentHeight - viewport.Height);
+
+        var clampedX = Math.Clamp(targetOffsetX, 0, maxOffsetX);
+        var clampedY = Math.Clamp(targetOffsetY, 0, maxOffsetY);
+
+        scrollViewer.Offset = new Vector(clampedX, clampedY);
 
         e.Handled = true;
     }
