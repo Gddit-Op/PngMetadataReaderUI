@@ -79,18 +79,19 @@ public partial class MainWindow : Window
                 var files = await asyncDataTransfer.TryGetFilesAsync();
                 if (files != null && files.Any())
                 {
-                    var pngFile = files.FirstOrDefault(f =>
-                        f.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
-
-                    if (pngFile != null)
+                    foreach (var file in files)
                     {
-                        viewModel.LoadImageCommand.Execute(pngFile.TryGetLocalPath());
-                        return;
+                        var localPath = file.TryGetLocalPath();
+                        if (ImageFormatHelper.IsSupportedImageFile(localPath))
+                        {
+                            viewModel.LoadImageCommand.Execute(localPath);
+                            return;
+                        }
                     }
                 }
             }
 
-            viewModel.StatusMessage = "Please drop a PNG file.";
+            viewModel.StatusMessage = "Please drop a supported image file (PNG/JPG/WebP).";
         }
     }
 
@@ -100,12 +101,12 @@ public partial class MainWindow : Window
         {
             var options = new FilePickerOpenOptions
             {
-                Title = "Select PNG Image",
+                Title = "Select Image",
                 FileTypeFilter = new[]
                 {
-                    new FilePickerFileType("PNG Images")
+                    new FilePickerFileType("Supported Images")
                     {
-                        Patterns = new[] { "*.png" }
+                        Patterns = new[] { "*.png", "*.jpg", "*.jpeg", "*.webp" }
                     }
                 },
                 AllowMultiple = false

@@ -18,7 +18,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private Bitmap? _image;
 
     [ObservableProperty]
-    private string _statusMessage = "Drag and drop a PNG image here";
+    private string _statusMessage = "Drag and drop an image (PNG/JPG/WebP) here";
 
     [ObservableProperty]
     private string? _browseFilePath;
@@ -58,9 +58,10 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            if (!filePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            if (!ImageFormatHelper.IsSupportedImageFile(filePath))
             {
-                const string dialogMessage = "Bitte wählen Sie eine PNG-Datei aus.";
+                var dialogMessage =
+                    $"Bitte waehlen Sie eine Bilddatei im Format {ImageFormatHelper.GetSupportedExtensionsDisplay()} aus.";
                 StatusMessage = dialogMessage;
                 RequestDialog(DialogType.Error, "Falsches Dateiformat", dialogMessage);
                 return;
@@ -104,9 +105,19 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (string.IsNullOrEmpty(BrowseFilePath) || !File.Exists(BrowseFilePath))
         {
-            const string message = "Bitte laden Sie zuerst ein PNG-Bild.";
+            var message =
+                $"Bitte laden Sie zuerst ein Bild im Format {ImageFormatHelper.GetSupportedExtensionsDisplay()}.";
             StatusMessage = message;
             RequestDialog(DialogType.Error, "Kein Bild geladen", message);
+            return;
+        }
+
+        if (!ImageFormatHelper.IsSupportedImageFile(BrowseFilePath))
+        {
+            var message =
+                $"Das ausgewaehlte Dateiformat wird nicht unterstuetzt. Erlaubt sind {ImageFormatHelper.GetSupportedExtensionsDisplay()}.";
+            StatusMessage = message;
+            RequestDialog(DialogType.Error, "Falsches Dateiformat", message);
             return;
         }
 
@@ -134,10 +145,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
             StatusMessage = "Bildbeschreibung wird erstellt...";
 
-            var imageBytes = await File.ReadAllBytesAsync(BrowseFilePath);
-            var base64Image = Convert.ToBase64String(imageBytes);
+            if (!ImageFormatHelper.TryEncodeToBase64(BrowseFilePath, out var base64Image, out var mimeType, out var encodeError))
+            {
+                var message = string.IsNullOrWhiteSpace(encodeError)
+                    ? "Das Bild konnte nicht verarbeitet werden."
+                    : $"Das Bild konnte nicht verarbeitet werden: {encodeError}";
+                StatusMessage = message;
+                RequestDialog(DialogType.Error, "Bildverarbeitung fehlgeschlagen", message);
+                return;
+            }
 
-            var payload = BuildChatCompletionPayload(settings, base64Image);
+            var payload = BuildChatCompletionPayload(settings, base64Image, mimeType);
 
             using var httpClient = new HttpClient
             {
@@ -206,7 +224,7 @@ public partial class MainWindowViewModel : ViewModelBase
         GeneratePromptCommand.NotifyCanExecuteChanged();
     }
 
-    private static string BuildChatCompletionPayload(UserSettings settings, string base64Image)
+    private static string BuildChatCompletionPayload(UserSettings settings, string base64Image, string mimeType)
     {
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
@@ -243,7 +261,7 @@ public partial class MainWindowViewModel : ViewModelBase
             writer.WriteString("type", "image_url");
             writer.WritePropertyName("image_url");
             writer.WriteStartObject();
-            writer.WriteString("url", $"data:image/png;base64,{base64Image}");
+            writer.WriteString("url", $"data:{mimeType};base64,{base64Image}");
             writer.WriteEndObject();
             writer.WriteEndObject();
 

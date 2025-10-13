@@ -11,44 +11,46 @@ namespace PngMetadataReaderUI.Helpers;
 
 internal static class WriteMetadata
 {
-    public static MetadataExtractionResult WriteMetadataToTxt(this string pngPath, string keyword = "prompt")
+    private const string WorkflowKeyword = "workflow";
+
+    public static MetadataExtractionResult WriteMetadataToTxt(this string imagePath, string keyword = "prompt")
     {
-        if (!File.Exists(pngPath))
+        if (!File.Exists(imagePath))
         {
-            var message = $"Datei wurde nicht gefunden: {pngPath}";
+            var message = $"Datei wurde nicht gefunden: {imagePath}";
             Console.WriteLine(message);
             return MetadataExtractionResult.Error(message);
         }
 
-        string outputPath = Path.ChangeExtension(pngPath, ".txt");
+        string outputPath = Path.ChangeExtension(imagePath, ".txt");
 
         try
         {
-            var directories = ImageMetadataReader.ReadMetadata(pngPath);
-            var textDirs = directories.Where(x => x.Name == "PNG-tEXt").ToList();
-            if (textDirs.Count == 0)
-            {
-                File.AppendAllText(outputPath, "No textual metadata found in PNG." + Environment.NewLine);
-                return MetadataExtractionResult.NoMetadata("Keine Metadaten im PNG gefunden.");
-            }
-
-            var textTags = textDirs
+            var directories = ImageMetadataReader.ReadMetadata(imagePath);
+            var textualTags = directories
                 .SelectMany(x => x.Tags)
-                .Where(tag => string.IsNullOrWhiteSpace(tag.Description) == false)
+                .Where(tag => !string.IsNullOrWhiteSpace(tag.Description))
                 .ToList();
 
-            if (textTags.Count == 0)
+            if (textualTags.Count == 0)
             {
-                File.AppendAllText(outputPath, "No textual metadata found in PNG." + Environment.NewLine);
-                return MetadataExtractionResult.NoMetadata("Keine Metadaten im PNG gefunden.");
+                File.AppendAllText(outputPath, "No textual metadata found in image." + Environment.NewLine);
+                return MetadataExtractionResult.NoMetadata("Keine Metadaten im Bild gefunden.");
             }
 
-            foreach (var metadataTag in textTags)
+            var promptTags = textualTags
+                .Where(tag => ContainsKeyword(tag.Description!, keyword))
+                .ToList();
+
+            foreach (var metadataTag in promptTags)
             {
-                File.AppendAllText(outputPath, $"Raw-Output '{keyword}': {metadataTag.Description}{Environment.NewLine}");
+                var payload = ExtractKeywordPayload(metadataTag.Description!, keyword);
+                File.AppendAllText(
+                    outputPath,
+                    $"Raw-Output '{keyword}' ({metadataTag.DirectoryName}/{metadataTag.Name}): {payload}{Environment.NewLine}");
             }
 
-            var workflowResult = TryWriteWorkflowJson(textTags, pngPath);
+            var workflowResult = TryWriteWorkflowJson(textualTags, imagePath);
             var workflowFailed = false;
             string? workflowMessage = null;
             if (workflowResult.Exists)
@@ -62,15 +64,16 @@ internal static class WriteMetadata
                 workflowMessage = workflowResult.Message;
             }
 
-            var promptTag = textTags.FirstOrDefault(x =>
-                x.Description != null && x.Description.StartsWith(keyword, StringComparison.OrdinalIgnoreCase));
-            if (promptTag == null || string.IsNullOrWhiteSpace(promptTag.Description))
+            var promptTag = promptTags.FirstOrDefault();
+            if (promptTag == null)
             {
-                File.AppendAllText(outputPath, $"{Environment.NewLine}No '{keyword}' chunk found in PNG metadata.{Environment.NewLine}");
-                return MetadataExtractionResult.NoMetadata($"Kein '{keyword}'-Eintrag im PNG gefunden.");
+                File.AppendAllText(outputPath,
+                    $"{Environment.NewLine}No '{keyword}' entry found in image metadata.{Environment.NewLine}");
+                return MetadataExtractionResult.NoMetadata($"Kein '{keyword}'-Eintrag im Bild gefunden.");
             }
 
-            var promptJson = promptTag.Description.ExtractFirstJson();
+            var promptPayload = ExtractKeywordPayload(promptTag.Description!, keyword);
+            var promptJson = promptPayload.ExtractFirstJson();
             var pipeline = JsonSerializer.Deserialize(promptJson, PipelineJsonContext.Default.Pipeline);
             if (pipeline == null)
             {
@@ -115,18 +118,20 @@ internal static class WriteMetadata
         }
     }
 
-    private static WorkflowSaveResult TryWriteWorkflowJson(IEnumerable<Tag> tags, string pngPath)
+    private static WorkflowSaveResult TryWriteWorkflowJson(IEnumerable<Tag> tags, string imagePath)
     {
-        var workflowTag = tags.FirstOrDefault(x =>
-            x.Description != null && x.Description.StartsWith("workflow", StringComparison.OrdinalIgnoreCase));
-        if (workflowTag == null || string.IsNullOrWhiteSpace(workflowTag.Description))
+        var workflowTag = tags.FirstOrDefault(tag =>
+            !string.IsNullOrWhiteSpace(tag.Description) &&
+            ContainsKeyword(tag.Description!, WorkflowKeyword));
+        if (workflowTag == null)
         {
             return WorkflowSaveResult.NotPresent();
         }
 
         try
         {
-            var workflowJson = workflowTag.Description.ExtractFirstJson();
+            var workflowPayload = ExtractKeywordPayload(workflowTag.Description!, WorkflowKeyword);
+            var workflowJson = workflowPayload.ExtractFirstJson();
             using var document = JsonDocument.Parse(workflowJson);
             using var buffer = new MemoryStream();
             using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))
@@ -136,8 +141,8 @@ internal static class WriteMetadata
 
             var formattedWorkflowJson = Encoding.UTF8.GetString(buffer.ToArray());
             var workflowOutputPath = Path.Combine(
-                Path.GetDirectoryName(pngPath) ?? string.Empty,
-                $"{Path.GetFileNameWithoutExtension(pngPath)}_workflow.json");
+                Path.GetDirectoryName(imagePath) ?? string.Empty,
+                $"{Path.GetFileNameWithoutExtension(imagePath)}_workflow.json");
 
             File.WriteAllText(workflowOutputPath, formattedWorkflowJson + Environment.NewLine);
             return WorkflowSaveResult.Success($"Workflow JSON gespeichert als {Path.GetFileName(workflowOutputPath)}.");
@@ -146,6 +151,20 @@ internal static class WriteMetadata
         {
             return WorkflowSaveResult.Failure($"Workflow JSON konnte nicht gespeichert werden: {ex.Message}");
         }
+    }
+
+    private static bool ContainsKeyword(string description, string keyword) =>
+        description.Contains(keyword, StringComparison.OrdinalIgnoreCase);
+
+    private static string ExtractKeywordPayload(string description, string keyword)
+    {
+        var index = description.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
+        if (index < 0)
+        {
+            return description.Trim();
+        }
+
+        return description[index..].Trim();
     }
 
     private readonly struct WorkflowSaveResult

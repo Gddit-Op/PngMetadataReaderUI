@@ -39,7 +39,7 @@
                 DragDrop.AllowDrop="True"
                 Background="{Binding Image, Converter={x:Static ObjectConverters.IsNotNull}, ConverterParameter=Transparent, FallbackValue=LightGray}">
             <Panel>
-                <TextBlock Text="Drop PNG image here"
+                <TextBlock Text="Drop image (PNG/JPG/WebP) here"
                            IsVisible="{Binding Image, Converter={x:Static ObjectConverters.IsNull}}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
@@ -62,7 +62,7 @@
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Center"
                         Spacing="12">
-                <Button Content="Browse for PNG Image..." 
+                <Button Content="Browse for Image..." 
                         Click="BrowseButton_Click"/>
 
                 <Button Content="Bildbeschreibung Prompt"
