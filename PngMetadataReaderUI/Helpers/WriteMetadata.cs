@@ -155,17 +155,45 @@ internal static class WriteMetadata
     }
 
     private static bool ContainsKeyword(string description, string keyword) =>
-        description.Contains(keyword, StringComparison.OrdinalIgnoreCase);
+        TryGetKeywordValueStart(description, keyword, out _);
 
     private static string ExtractKeywordPayload(string description, string keyword)
     {
-        var index = description.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
-        if (index < 0)
+        if (!TryGetKeywordValueStart(description, keyword, out var valueStart))
         {
             return description.Trim();
         }
 
-        return description[index..].Trim();
+        return description[valueStart..].Trim();
+    }
+
+    private static bool TryGetKeywordValueStart(string description, string keyword, out int valueStart)
+    {
+        valueStart = 0;
+        var keyStart = 0;
+        while (keyStart < description.Length && char.IsWhiteSpace(description[keyStart]))
+        {
+            keyStart++;
+        }
+
+        if (!description.AsSpan(keyStart).StartsWith(keyword, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var separatorIndex = keyStart + keyword.Length;
+        while (separatorIndex < description.Length && char.IsWhiteSpace(description[separatorIndex]))
+        {
+            separatorIndex++;
+        }
+
+        if (separatorIndex >= description.Length || description[separatorIndex] != ':')
+        {
+            return false;
+        }
+
+        valueStart = separatorIndex + 1;
+        return true;
     }
 
     private static void DeleteOutputFileIfExists(string path)

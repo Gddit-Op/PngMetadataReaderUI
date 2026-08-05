@@ -27,9 +27,6 @@ public partial class MainWindow : Window
         _imageScrollViewer = this.FindControl<ScrollViewer>("ImageScrollViewer");
         _dropZone = this.FindControl<Border>("DropZone");
         _dropZone?.AddHandler(InputElement.PointerWheelChangedEvent, DropZone_PointerWheelChanged, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
-        #if DEBUG
-        this.AttachDevTools();
-        #endif
         AddHandler(DragDrop.DragOverEvent, DragOver);
         AddHandler(DragDrop.DropEvent, Drop);
         AddHandler(InputElement.KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
