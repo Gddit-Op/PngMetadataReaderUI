@@ -7,6 +7,10 @@ diesem Ordner werden verarbeitet; die erzeugten TXT- und Workflow-JSON-Dateien
 werden neben den jeweiligen Bildern gespeichert. Unterordner werden nicht
 durchsucht.
 
+Bei ComfyUI-Bildern werden verbundene `CLIPTextEncode`-Nodes als positive und
+negative Prompts ausgewertet. Wenn mindestens ein nicht leerer Prompt vorhanden
+ist, wird zusaetzlich `<Bildname>_prompts.txt` neben dem Bild gespeichert.
+
 ## NativeAOT publish
 
 On Windows, publish through the repository script so NativeAOT can initialize a

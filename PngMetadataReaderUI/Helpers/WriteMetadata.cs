@@ -12,6 +12,7 @@ namespace PngMetadataReaderUI.Helpers;
 internal static class WriteMetadata
 {
     private const string WorkflowKeyword = "workflow";
+    private const string PromptFileSuffix = "_prompts.txt";
 
     public static MetadataExtractionResult WriteMetadataToTxt(this string imagePath, string keyword = "prompt")
     {
@@ -23,6 +24,7 @@ internal static class WriteMetadata
         }
 
         string outputPath = Path.ChangeExtension(imagePath, ".txt");
+        string promptsOutputPath = GetPromptsOutputPath(imagePath);
 
         try
         {
@@ -35,6 +37,7 @@ internal static class WriteMetadata
             if (textualTags.Count == 0)
             {
                 DeleteOutputFileIfExists(outputPath);
+                DeleteOutputFileIfExists(promptsOutputPath);
                 return MetadataExtractionResult.NoMetadata("Keine Metadaten im Bild gefunden.");
             }
 
@@ -69,6 +72,7 @@ internal static class WriteMetadata
             if (promptTag == null)
             {
                 DeleteOutputFileIfExists(outputPath);
+                DeleteOutputFileIfExists(promptsOutputPath);
                 return MetadataExtractionResult.NoMetadata($"Kein '{keyword}'-Eintrag im Bild gefunden.");
             }
 
@@ -77,9 +81,21 @@ internal static class WriteMetadata
             var pipeline = JsonSerializer.Deserialize(promptJson, PipelineJsonContext.Default.Pipeline);
             if (pipeline == null)
             {
+                DeleteOutputFileIfExists(promptsOutputPath);
                 builder.AppendLine("Failed to deserialize pipeline JSON.");
                 File.WriteAllText(outputPath, builder.ToString());
                 return MetadataExtractionResult.Error("Die Prompt-Metadaten konnten nicht verarbeitet werden.");
+            }
+
+            var comfyPrompts = ComfyPromptExtractor.Extract(pipeline);
+            if (comfyPrompts.HasPrompts)
+            {
+                File.WriteAllText(promptsOutputPath, comfyPrompts.ToText(), Encoding.UTF8);
+                builder.AppendLine($"ComfyUI-Prompts gespeichert als {Path.GetFileName(promptsOutputPath)}.");
+            }
+            else
+            {
+                DeleteOutputFileIfExists(promptsOutputPath);
             }
 
             foreach (var kvp in pipeline)
@@ -101,6 +117,11 @@ internal static class WriteMetadata
                 baseMessage += $" {workflowResult.Message}";
             }
 
+            if (comfyPrompts.HasPrompts)
+            {
+                baseMessage += $" ComfyUI-Prompts gespeichert als {Path.GetFileName(promptsOutputPath)}.";
+            }
+
             if (workflowFailed)
             {
                 var errorMessage = string.IsNullOrEmpty(workflowMessage)
@@ -114,6 +135,7 @@ internal static class WriteMetadata
         }
         catch (Exception ex)
         {
+            DeleteOutputFileIfExists(promptsOutputPath);
             File.AppendAllText(outputPath, $"{Environment.NewLine}Error: {ex.Message}{Environment.NewLine}");
             return MetadataExtractionResult.Error($"Fehler beim Lesen der Metadaten: {ex.Message}");
         }
@@ -203,6 +225,11 @@ internal static class WriteMetadata
             File.Delete(path);
         }
     }
+
+    private static string GetPromptsOutputPath(string imagePath) =>
+        Path.Combine(
+            Path.GetDirectoryName(imagePath) ?? string.Empty,
+            $"{Path.GetFileNameWithoutExtension(imagePath)}{PromptFileSuffix}");
 
     private readonly struct WorkflowSaveResult
     {

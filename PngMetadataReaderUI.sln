@@ -5,6 +5,8 @@ VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PngMetadataReaderUI", "PngMetadataReaderUI\PngMetadataReaderUI.csproj", "{7E8CF4A7-99C9-4903-9668-31B732CEF0D3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PngMetadataReaderUI.Tests", "PngMetadataReaderUI.Tests\PngMetadataReaderUI.Tests.csproj", "{1AE1A910-E559-402D-92A8-469DEA580A7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{7E8CF4A7-99C9-4903-9668-31B732CEF0D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7E8CF4A7-99C9-4903-9668-31B732CEF0D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7E8CF4A7-99C9-4903-9668-31B732CEF0D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1AE1A910-E559-402D-92A8-469DEA580A7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1AE1A910-E559-402D-92A8-469DEA580A7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1AE1A910-E559-402D-92A8-469DEA580A7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1AE1A910-E559-402D-92A8-469DEA580A7C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
