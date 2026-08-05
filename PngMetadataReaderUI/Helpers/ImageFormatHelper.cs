@@ -2,6 +2,7 @@ using Avalonia.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace PngMetadataReaderUI.Helpers;
 
@@ -27,6 +28,15 @@ internal static class ImageFormatHelper
     }
 
     public static string GetSupportedExtensionsDisplay() => "PNG, JPG, JPEG, WEBP";
+
+    public static IReadOnlyList<string> GetSupportedImageFiles(string directoryPath)
+    {
+        return Directory
+            .EnumerateFiles(directoryPath, "*", SearchOption.TopDirectoryOnly)
+            .Where(IsSupportedImageFile)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
 
     public static bool TryGetMimeType(string? path, out string mimeType)
     {

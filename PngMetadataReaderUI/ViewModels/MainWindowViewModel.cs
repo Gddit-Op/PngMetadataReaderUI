@@ -4,7 +4,9 @@ using CommunityToolkit.Mvvm.Input;
 using PngMetadataReaderUI.Helpers;
 using PngMetadataReaderUI.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -27,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private double _imageZoom = 1.0;
 
     private bool _isGeneratingPrompt;
+    private bool _isExtractingFolder;
 
     private const double MinZoom = 0.2;
     private const double MaxZoom = 5.0;
@@ -108,6 +111,93 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusMessage = message;
             RequestDialog(DialogType.Error, "Fehler beim Laden des Bildes", message);
         }
+    }
+
+    public async Task ExtractFolderAsync(string? folderPath)
+    {
+        if (_isExtractingFolder || string.IsNullOrWhiteSpace(folderPath))
+        {
+            return;
+        }
+
+        if (!Directory.Exists(folderPath))
+        {
+            var message = $"Der Ordner wurde nicht gefunden: {folderPath}";
+            StatusMessage = message;
+            RequestDialog(DialogType.Error, "Ordner nicht gefunden", message);
+            return;
+        }
+
+        try
+        {
+            _isExtractingFolder = true;
+            StatusMessage = "Bilder im Ordner werden verarbeitet...";
+
+            var result = await Task.Run(() => ExtractMetadataFromFolder(folderPath));
+            StatusMessage = result.Summary;
+
+            var dialogType = result.ErrorCount > 0
+                ? DialogType.Error
+                : DialogType.Information;
+            var title = result.ImageCount == 0
+                ? "Keine Bilder gefunden"
+                : result.ErrorCount > 0
+                    ? "Ordner mit Fehlern verarbeitet"
+                    : "Ordner verarbeitet";
+
+            RequestDialog(dialogType, title, result.GetDialogMessage());
+        }
+        catch (Exception ex)
+        {
+            var message = $"Fehler beim Verarbeiten des Ordners: {ex.Message}";
+            StatusMessage = message;
+            RequestDialog(DialogType.Error, "Ordnerverarbeitung fehlgeschlagen", message);
+        }
+        finally
+        {
+            _isExtractingFolder = false;
+        }
+    }
+
+    private static FolderExtractionSummary ExtractMetadataFromFolder(string folderPath)
+    {
+        var imageFiles = ImageFormatHelper.GetSupportedImageFiles(folderPath);
+        var successCount = 0;
+        var noMetadataCount = 0;
+        var errors = new List<string>();
+
+        foreach (var imageFile in imageFiles)
+        {
+            MetadataExtractionResult extractionResult;
+            try
+            {
+                extractionResult = imageFile.WriteMetadataToTxt();
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"{Path.GetFileName(imageFile)}: {ex.Message}");
+                continue;
+            }
+
+            switch (extractionResult.Status)
+            {
+                case MetadataExtractionStatus.Success:
+                    successCount++;
+                    break;
+                case MetadataExtractionStatus.NoMetadata:
+                    noMetadataCount++;
+                    break;
+                case MetadataExtractionStatus.Error:
+                    errors.Add($"{Path.GetFileName(imageFile)}: {extractionResult.Message}");
+                    break;
+            }
+        }
+
+        return new FolderExtractionSummary(
+            imageFiles.Count,
+            successCount,
+            noMetadataCount,
+            errors);
     }
 
     [RelayCommand(CanExecute = nameof(CanGeneratePrompt))]
@@ -517,6 +607,46 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception)
         {
             return path;
+        }
+    }
+
+    private sealed record FolderExtractionSummary(
+        int ImageCount,
+        int SuccessCount,
+        int NoMetadataCount,
+        IReadOnlyList<string> Errors)
+    {
+        public int ErrorCount => Errors.Count;
+
+        public string Summary => ImageCount == 0
+            ? $"Keine unterstützten Bilder ({ImageFormatHelper.GetSupportedExtensionsDisplay()}) im Ordner gefunden."
+            : $"{ImageCount} Bilder verarbeitet: {SuccessCount} erfolgreich, " +
+              $"{NoMetadataCount} ohne Prompt-Metadaten, {ErrorCount} Fehler.";
+
+        public string GetDialogMessage()
+        {
+            if (Errors.Count == 0)
+            {
+                return Summary;
+            }
+
+            const int maximumDisplayedErrors = 10;
+            var builder = new StringBuilder(Summary);
+            builder.AppendLine();
+            builder.AppendLine();
+            builder.AppendLine("Fehler:");
+
+            foreach (var error in Errors.Take(maximumDisplayedErrors))
+            {
+                builder.AppendLine($"- {error}");
+            }
+
+            if (Errors.Count > maximumDisplayedErrors)
+            {
+                builder.Append($"- ... und {Errors.Count - maximumDisplayedErrors} weitere Fehler");
+            }
+
+            return builder.ToString().TrimEnd();
         }
     }
 }

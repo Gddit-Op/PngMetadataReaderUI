@@ -136,6 +136,29 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void BrowseFolderButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        var options = new FolderPickerOpenOptions
+        {
+            Title = "Eingabeordner auswählen",
+            AllowMultiple = false
+        };
+
+        var result = await StorageProvider.OpenFolderPickerAsync(options);
+        if (result.Count == 0)
+        {
+            return;
+        }
+
+        var folderPath = result[0].TryGetLocalPath();
+        await viewModel.ExtractFolderAsync(folderPath);
+    }
+
     private async void SettingsMenuItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         var settings = SettingsService.Load();

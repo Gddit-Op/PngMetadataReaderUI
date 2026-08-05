@@ -1,6 +1,12 @@
 # PngMetadataReaderUI
 Png Files read metadata with UI Avalonia .NET core
 
+Neben einzelnen Bildern kann über **Eingabeordner extrahieren...** ein Ordner
+ausgewählt werden. Alle unterstützten Bilder (PNG, JPG, JPEG und WebP) direkt in
+diesem Ordner werden verarbeitet; die erzeugten TXT- und Workflow-JSON-Dateien
+werden neben den jeweiligen Bildern gespeichert. Unterordner werden nicht
+durchsucht.
+
 ## NativeAOT publish
 
 On Windows, publish through the repository script so NativeAOT can initialize a

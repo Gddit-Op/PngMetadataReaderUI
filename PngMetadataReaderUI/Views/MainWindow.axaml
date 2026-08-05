@@ -102,6 +102,9 @@
                 <Button Content="Browse for Image..." 
                         Click="BrowseButton_Click"/>
 
+                <Button Content="Eingabeordner extrahieren..."
+                        Click="BrowseFolderButton_Click"/>
+
                 <Button Content="Bildbeschreibung Prompt"
                         Command="{Binding GeneratePromptCommand}"/>
             </StackPanel>
