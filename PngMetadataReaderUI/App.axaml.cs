@@ -34,18 +34,34 @@ namespace PngMetadataReaderUI
 
         private void DisableAvaloniaDataAnnotationValidation()
         {
-            // Get an array of plugins to remove
-            #pragma warning disable IL2026
-            var dataValidationPluginsToRemove =
-                BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
-            #pragma warning restore IL2026
+            // Use reflection to access internal Avalonia BindingPlugins and remove the DataAnnotationsValidationPlugin instances.
+            var bindingPluginsType = System.Type.GetType("Avalonia.Data.Core.BindingPlugins, Avalonia");
+            if (bindingPluginsType == null)
+                return;
 
-            // remove each entry found
-            foreach (var plugin in dataValidationPluginsToRemove)
+            var prop = bindingPluginsType.GetProperty("DataValidators", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+            if (prop == null)
+                return;
+
+            var dataValidators = prop.GetValue(null) as System.Collections.IList;
+            if (dataValidators == null)
+                return;
+
+            // Collect plugins to remove (identify by type name to avoid internal type visibility issues)
+            var toRemove = new System.Collections.Generic.List<object>();
+            foreach (var plugin in dataValidators)
             {
-                #pragma warning disable IL2026
-                BindingPlugins.DataValidators.Remove(plugin);
-                #pragma warning restore IL2026
+                var pluginType = plugin?.GetType();
+                if (pluginType != null && pluginType.Name == "DataAnnotationsValidationPlugin" && pluginType.Namespace == "Avalonia.Data.Core")
+                {
+                    toRemove.Add(plugin);
+                }
+            }
+
+            // Remove the identified plugins
+            foreach (var plugin in toRemove)
+            {
+                dataValidators.Remove(plugin);
             }
         }
     }
