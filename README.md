@@ -10,6 +10,8 @@ durchsucht.
 Bei ComfyUI-Bildern werden verbundene `CLIPTextEncode`-Nodes als positive und
 negative Prompts ausgewertet. Wenn mindestens ein nicht leerer Prompt vorhanden
 ist, wird zusaetzlich `<Bildname>_prompts.txt` neben dem Bild gespeichert.
+Bei der Ordneranalyse werden stattdessen die Prompts aller Bilder im Format
+`positive:...` / `negative:...` gesammelt in `prompts.txt` geschrieben.
 
 ## NativeAOT publish
 

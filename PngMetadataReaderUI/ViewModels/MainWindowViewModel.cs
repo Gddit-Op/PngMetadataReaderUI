@@ -161,17 +161,26 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private static FolderExtractionSummary ExtractMetadataFromFolder(string folderPath)
     {
+        const string promptsFileName = "prompts.txt";
         var imageFiles = ImageFormatHelper.GetSupportedImageFiles(folderPath);
         var successCount = 0;
         var noMetadataCount = 0;
         var errors = new List<string>();
+        var extractedPrompts = new List<ComfyPrompts>();
+        var promptsFileWritten = false;
 
         foreach (var imageFile in imageFiles)
         {
             MetadataExtractionResult extractionResult;
             try
             {
-                extractionResult = imageFile.WriteMetadataToTxt();
+                extractionResult = imageFile.WriteMetadataToTxt(
+                    out var imagePrompts,
+                    writePromptFile: false);
+                if (imagePrompts.HasPrompts)
+                {
+                    extractedPrompts.Add(imagePrompts);
+                }
             }
             catch (Exception ex)
             {
@@ -193,10 +202,31 @@ public partial class MainWindowViewModel : ViewModelBase
             }
         }
 
+        var promptsPath = Path.Combine(folderPath, promptsFileName);
+        try
+        {
+            if (extractedPrompts.Count > 0)
+            {
+                var promptsText = string.Concat(extractedPrompts.Select(prompts => prompts.ToFolderText()));
+                File.WriteAllText(promptsPath, promptsText, Encoding.UTF8);
+                promptsFileWritten = true;
+            }
+            else if (File.Exists(promptsPath))
+            {
+                File.Delete(promptsPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            errors.Add($"{promptsFileName}: {ex.Message}");
+        }
+
         return new FolderExtractionSummary(
             imageFiles.Count,
             successCount,
             noMetadataCount,
+            extractedPrompts.Count,
+            promptsFileWritten,
             errors);
     }
 
@@ -614,14 +644,28 @@ public partial class MainWindowViewModel : ViewModelBase
         int ImageCount,
         int SuccessCount,
         int NoMetadataCount,
+        int PromptImageCount,
+        bool PromptsFileWritten,
         IReadOnlyList<string> Errors)
     {
         public int ErrorCount => Errors.Count;
 
-        public string Summary => ImageCount == 0
-            ? $"Keine unterstützten Bilder ({ImageFormatHelper.GetSupportedExtensionsDisplay()}) im Ordner gefunden."
-            : $"{ImageCount} Bilder verarbeitet: {SuccessCount} erfolgreich, " +
-              $"{NoMetadataCount} ohne Prompt-Metadaten, {ErrorCount} Fehler.";
+        public string Summary
+        {
+            get
+            {
+                if (ImageCount == 0)
+                {
+                    return $"Keine unterstützten Bilder ({ImageFormatHelper.GetSupportedExtensionsDisplay()}) im Ordner gefunden.";
+                }
+
+                var summary = $"{ImageCount} Bilder verarbeitet: {SuccessCount} erfolgreich, " +
+                              $"{NoMetadataCount} ohne Prompt-Metadaten, {ErrorCount} Fehler.";
+                return PromptsFileWritten
+                    ? $"{summary} Prompts aus {PromptImageCount} Bildern in prompts.txt gespeichert."
+                    : summary;
+            }
+        }
 
         public string GetDialogMessage()
         {

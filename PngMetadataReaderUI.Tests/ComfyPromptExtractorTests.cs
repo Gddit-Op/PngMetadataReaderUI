@@ -23,6 +23,10 @@ public class ComfyPromptExtractorTests
         Assert.Equal(["blurry, low quality"], result.Negative);
         Assert.Contains("Positive Prompt:", result.ToText());
         Assert.Contains("Negative Prompt:", result.ToText());
+        Assert.Equal(
+            $"positive:a portrait{Environment.NewLine}{Environment.NewLine}" +
+            $"negative:blurry, low quality{Environment.NewLine}----{Environment.NewLine}",
+            result.ToFolderText());
     }
 
     [Fact]

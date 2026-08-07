@@ -178,6 +178,8 @@ internal static class ComfyPromptExtractor
 
 internal sealed record ComfyPrompts(IReadOnlyList<string> Positive, IReadOnlyList<string> Negative)
 {
+    public static ComfyPrompts Empty { get; } = new([], []);
+
     public bool HasPrompts => Positive.Count > 0 || Negative.Count > 0;
 
     public string ToText()
@@ -186,6 +188,18 @@ internal sealed record ComfyPrompts(IReadOnlyList<string> Positive, IReadOnlyLis
         Append(builder, "Positive Prompt", Positive);
         Append(builder, "Negative Prompt", Negative);
         return builder.ToString().TrimEnd() + Environment.NewLine;
+    }
+
+    public string ToFolderText()
+    {
+        var builder = new StringBuilder();
+        builder.Append("positive:");
+        builder.AppendLine(string.Join(Environment.NewLine, Positive));
+        builder.AppendLine();
+        builder.Append("negative:");
+        builder.AppendLine(string.Join(Environment.NewLine, Negative));
+        builder.AppendLine("----");
+        return builder.ToString();
     }
 
     private static void Append(StringBuilder builder, string heading, IReadOnlyList<string> prompts)

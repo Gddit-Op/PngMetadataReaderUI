@@ -14,8 +14,17 @@ internal static class WriteMetadata
     private const string WorkflowKeyword = "workflow";
     private const string PromptFileSuffix = "_prompts.txt";
 
-    public static MetadataExtractionResult WriteMetadataToTxt(this string imagePath, string keyword = "prompt")
+    public static MetadataExtractionResult WriteMetadataToTxt(this string imagePath, string keyword = "prompt") =>
+        WriteMetadataToTxt(imagePath, out _, writePromptFile: true, keyword);
+
+    public static MetadataExtractionResult WriteMetadataToTxt(
+        this string imagePath,
+        out ComfyPrompts extractedPrompts,
+        bool writePromptFile,
+        string keyword = "prompt")
     {
+        extractedPrompts = ComfyPrompts.Empty;
+
         if (!File.Exists(imagePath))
         {
             var message = $"Datei wurde nicht gefunden: {imagePath}";
@@ -88,7 +97,8 @@ internal static class WriteMetadata
             }
 
             var comfyPrompts = ComfyPromptExtractor.Extract(pipeline);
-            if (comfyPrompts.HasPrompts)
+            extractedPrompts = comfyPrompts;
+            if (comfyPrompts.HasPrompts && writePromptFile)
             {
                 File.WriteAllText(promptsOutputPath, comfyPrompts.ToText(), Encoding.UTF8);
                 builder.AppendLine($"ComfyUI-Prompts gespeichert als {Path.GetFileName(promptsOutputPath)}.");
@@ -117,7 +127,7 @@ internal static class WriteMetadata
                 baseMessage += $" {workflowResult.Message}";
             }
 
-            if (comfyPrompts.HasPrompts)
+            if (comfyPrompts.HasPrompts && writePromptFile)
             {
                 baseMessage += $" ComfyUI-Prompts gespeichert als {Path.GetFileName(promptsOutputPath)}.";
             }
