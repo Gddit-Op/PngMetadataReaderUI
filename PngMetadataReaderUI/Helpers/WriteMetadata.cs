@@ -101,7 +101,7 @@ internal static class WriteMetadata
             extractedPrompts = comfyPrompts;
             if (comfyPrompts.HasPrompts && writePromptFile)
             {
-                File.WriteAllText(promptsOutputPath, comfyPrompts.ToText(), Encoding.UTF8);
+                File.WriteAllText(promptsOutputPath, comfyPrompts.ToFolderText(), Encoding.UTF8);
                 builder.AppendLine($"ComfyUI-Prompts gespeichert als {Path.GetFileName(promptsOutputPath)}.");
             }
             else

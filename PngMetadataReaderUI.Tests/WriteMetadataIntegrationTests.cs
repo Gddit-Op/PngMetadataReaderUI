@@ -26,9 +26,10 @@ public class WriteMetadataIntegrationTests
             Assert.True(File.Exists(promptsPath));
 
             var prompts = File.ReadAllText(promptsPath);
-            Assert.Contains("Positive Prompt:", prompts);
+            Assert.StartsWith("positive:", prompts);
             Assert.Contains("a bottle with a beautiful rainbow galaxy inside it", prompts);
-            Assert.DoesNotContain("Negative Prompt:", prompts);
+            Assert.Contains($"{Environment.NewLine}{Environment.NewLine}negative:{Environment.NewLine}----", prompts);
+            Assert.DoesNotContain("Positive Prompt:", prompts);
         }
         finally
         {
