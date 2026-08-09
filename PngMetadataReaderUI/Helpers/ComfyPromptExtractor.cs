@@ -28,7 +28,7 @@ internal static class ComfyPromptExtractor
         var unclassified = new List<string>();
         foreach (var node in pipeline.Values.Where(IsTextEncode))
         {
-            var texts = GetTexts(node).ToList();
+            var texts = GetTexts(pipeline, node).ToList();
             var title = node.Meta?.Title ?? string.Empty;
             if (title.Contains("negative", StringComparison.OrdinalIgnoreCase) ||
                 title.Contains("negativ", StringComparison.OrdinalIgnoreCase))
@@ -82,7 +82,7 @@ internal static class ComfyPromptExtractor
 
         if (IsTextEncode(node))
         {
-            AddDistinct(destination, GetTexts(node));
+            AddDistinct(destination, GetTexts(pipeline, node));
             return;
         }
 
@@ -103,24 +103,63 @@ internal static class ComfyPromptExtractor
         }
     }
 
-    private static IEnumerable<string> GetTexts(Node node)
+    private static IEnumerable<string> GetTexts(Pipeline pipeline, Node node)
     {
         foreach (var input in node.Inputs)
         {
-            var isTextInput = input.Key.Equals("text", StringComparison.OrdinalIgnoreCase) ||
-                              input.Key.StartsWith("text_", StringComparison.OrdinalIgnoreCase);
-            if (!isTextInput || input.Value.ValueKind != JsonValueKind.String)
+            if (!IsTextInput(input.Key))
             {
                 continue;
             }
 
-            var text = input.Value.GetString()?.Trim();
-            if (!string.IsNullOrWhiteSpace(text))
+            foreach (var text in ResolveTextValue(pipeline, input.Value, []))
             {
                 yield return text;
             }
         }
     }
+
+    private static IEnumerable<string> ResolveTextValue(
+        Pipeline pipeline,
+        JsonElement value,
+        HashSet<NodeReference> visited)
+    {
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            var text = value.GetString()?.Trim();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                yield return text;
+            }
+
+            yield break;
+        }
+
+        if (!TryGetReference(value, out var reference) ||
+            !visited.Add(reference) ||
+            !pipeline.TryGetValue(reference.NodeId, out var referencedNode))
+        {
+            yield break;
+        }
+
+        foreach (var input in referencedNode.Inputs)
+        {
+            if (!input.Key.Equals("value", StringComparison.OrdinalIgnoreCase) &&
+                !IsTextInput(input.Key))
+            {
+                continue;
+            }
+
+            foreach (var text in ResolveTextValue(pipeline, input.Value, visited))
+            {
+                yield return text;
+            }
+        }
+    }
+
+    private static bool IsTextInput(string inputName) =>
+        inputName.Equals("text", StringComparison.OrdinalIgnoreCase) ||
+        inputName.StartsWith("text_", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsTextEncode(Node node) =>
         node.ClassType.Contains("CLIPTextEncode", StringComparison.OrdinalIgnoreCase);

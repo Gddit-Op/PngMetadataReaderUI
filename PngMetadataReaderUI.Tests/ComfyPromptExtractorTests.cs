@@ -88,6 +88,30 @@ public class ComfyPromptExtractorTests
     }
 
     [Fact]
+    public void ResolvesPromptFromReferencedPrimitiveStringNode()
+    {
+        var pipeline = Deserialize(
+            """
+            {
+              "6": { "inputs": { "text": "", "clip": ["12", 0] }, "class_type": "CLIPTextEncode" },
+              "31": { "inputs": { "positive": ["51", 0], "negative": ["6", 0] }, "class_type": "KSampler" },
+              "51": { "inputs": { "text": ["56", 0], "clip": ["12", 0] }, "class_type": "CLIPTextEncode" },
+              "56": {
+                "inputs": { "value": "A young woman performs a yoga warrior pose during sunset." },
+                "class_type": "PrimitiveStringMultiline"
+              }
+            }
+            """);
+
+        var result = ComfyPromptExtractor.Extract(pipeline);
+
+        Assert.Equal(
+            ["A young woman performs a yoga warrior pose during sunset."],
+            result.Positive);
+        Assert.Empty(result.Negative);
+    }
+
+    [Fact]
     public void NormalizesNonStandardNumbersOutsideStrings()
     {
         const string json =
