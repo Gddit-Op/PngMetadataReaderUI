@@ -52,6 +52,9 @@ internal static class ComfyPromptExtractor
             positive.Add(distinctUnclassified[0]);
         }
 
+        var positivePrompts = positive.ToHashSet(StringComparer.Ordinal);
+        negative.RemoveAll(positivePrompts.Contains);
+
         return new ComfyPrompts(positive, negative);
     }
 

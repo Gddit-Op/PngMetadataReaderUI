@@ -112,6 +112,37 @@ public class ComfyPromptExtractorTests
     }
 
     [Fact]
+    public void KeepsIdenticalPromptOnlyAsPositive()
+    {
+        var pipeline = Deserialize(
+            """
+            {
+              "599": {
+                "inputs": { "positive": ["627", 0], "negative": ["763", 0] },
+                "class_type": "KSamplerAdvanced"
+              },
+              "627": {
+                "inputs": { "text": "real photograph in a modern bedroom" },
+                "class_type": "CLIPTextEncode"
+              },
+              "763": {
+                "inputs": { "conditioning": ["627", 0] },
+                "class_type": "ConditioningZeroOut"
+              }
+            }
+            """);
+
+        var result = ComfyPromptExtractor.Extract(pipeline);
+
+        Assert.Equal(["real photograph in a modern bedroom"], result.Positive);
+        Assert.Empty(result.Negative);
+        Assert.Equal(
+            $"positive:real photograph in a modern bedroom{Environment.NewLine}{Environment.NewLine}" +
+            $"negative:{Environment.NewLine}----{Environment.NewLine}",
+            result.ToFolderText());
+    }
+
+    [Fact]
     public void NormalizesNonStandardNumbersOutsideStrings()
     {
         const string json =
