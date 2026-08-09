@@ -26,6 +26,7 @@ public class FolderPromptIntegrationTests
 
             var promptsPath = Path.Combine(tempDirectory, "prompts.txt");
             Assert.True(File.Exists(promptsPath));
+            AssertHasNoUtf8Bom(promptsPath);
 
             var promptsText = File.ReadAllText(promptsPath);
             Assert.Equal(2, CountOccurrences(promptsText, "positive:"));
@@ -53,5 +54,13 @@ public class FolderPromptIntegrationTests
         }
 
         return count;
+    }
+
+    private static void AssertHasNoUtf8Bom(string path)
+    {
+        var bytes = File.ReadAllBytes(path);
+        Assert.False(
+            bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF,
+            "Prompt file must be UTF-8 without BOM.");
     }
 }

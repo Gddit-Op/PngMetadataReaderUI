@@ -24,6 +24,7 @@ public class WriteMetadataIntegrationTests
             Assert.Equal(MetadataExtractionStatus.Success, result.Status);
             var promptsPath = Path.Combine(tempDirectory, "Example_prompts.txt");
             Assert.True(File.Exists(promptsPath));
+            AssertHasNoUtf8Bom(promptsPath);
 
             var prompts = File.ReadAllText(promptsPath);
             Assert.StartsWith("positive:", prompts);
@@ -35,5 +36,13 @@ public class WriteMetadataIntegrationTests
         {
             Directory.Delete(tempDirectory, recursive: true);
         }
+    }
+
+    private static void AssertHasNoUtf8Bom(string path)
+    {
+        var bytes = File.ReadAllBytes(path);
+        Assert.False(
+            bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF,
+            "Prompt file must be UTF-8 without BOM.");
     }
 }

@@ -13,6 +13,7 @@ internal static class WriteMetadata
 {
     private const string WorkflowKeyword = "workflow";
     private const string PromptFileSuffix = "_prompts.txt";
+    private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(false);
 
     public static MetadataExtractionResult WriteMetadataToTxt(this string imagePath, string keyword = "prompt") =>
         WriteMetadataToTxt(imagePath, out _, writePromptFile: true, keyword);
@@ -101,7 +102,7 @@ internal static class WriteMetadata
             extractedPrompts = comfyPrompts;
             if (comfyPrompts.HasPrompts && writePromptFile)
             {
-                File.WriteAllText(promptsOutputPath, comfyPrompts.ToFolderText(), Encoding.UTF8);
+                File.WriteAllText(promptsOutputPath, comfyPrompts.ToFolderText(), Utf8WithoutBom);
                 builder.AppendLine($"ComfyUI-Prompts gespeichert als {Path.GetFileName(promptsOutputPath)}.");
             }
             else

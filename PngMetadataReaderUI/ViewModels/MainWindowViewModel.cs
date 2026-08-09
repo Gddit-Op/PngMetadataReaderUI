@@ -30,6 +30,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private bool _isGeneratingPrompt;
     private bool _isExtractingFolder;
+    private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(false);
 
     private const double MinZoom = 0.2;
     private const double MaxZoom = 5.0;
@@ -208,7 +209,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (extractedPrompts.Count > 0)
             {
                 var promptsText = string.Concat(extractedPrompts.Select(prompts => prompts.ToFolderText()));
-                File.WriteAllText(promptsPath, promptsText, Encoding.UTF8);
+                File.WriteAllText(promptsPath, promptsText, Utf8WithoutBom);
                 promptsFileWritten = true;
             }
             else if (File.Exists(promptsPath))
