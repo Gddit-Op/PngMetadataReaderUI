@@ -87,6 +87,32 @@ public class ComfyPromptExtractorTests
         Assert.Empty(result.Negative);
     }
 
+    [Fact]
+    public void NormalizesNonStandardNumbersOutsideStrings()
+    {
+        const string json =
+            """
+            {
+              "77": {
+                "inputs": { "label": "NaN, Infinity and -Infinity stay text" },
+                "class_type": "PreviewImage",
+                "is_changed": [NaN, Infinity, -Infinity]
+              }
+            }
+            """;
+
+        var normalized = JsonCompatibility.NormalizeNonStandardNumbers(json);
+        using var document = JsonDocument.Parse(normalized);
+        var node = document.RootElement.GetProperty("77");
+
+        Assert.Equal(
+            "NaN, Infinity and -Infinity stay text",
+            node.GetProperty("inputs").GetProperty("label").GetString());
+        Assert.All(
+            node.GetProperty("is_changed").EnumerateArray(),
+            value => Assert.Equal(JsonValueKind.Null, value.ValueKind));
+    }
+
     private static Pipeline Deserialize(string json) =>
         JsonSerializer.Deserialize(json, PipelineJsonContext.Default.Pipeline)!;
 }

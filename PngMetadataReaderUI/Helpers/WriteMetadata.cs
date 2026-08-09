@@ -86,7 +86,8 @@ internal static class WriteMetadata
             }
 
             var promptPayload = ExtractKeywordPayload(promptTag.Description!, keyword);
-            var promptJson = promptPayload.ExtractFirstJson();
+            var promptJson = JsonCompatibility.NormalizeNonStandardNumbers(
+                promptPayload.ExtractFirstJson());
             var pipeline = JsonSerializer.Deserialize(promptJson, PipelineJsonContext.Default.Pipeline);
             if (pipeline == null)
             {
@@ -164,7 +165,8 @@ internal static class WriteMetadata
         try
         {
             var workflowPayload = ExtractKeywordPayload(workflowTag.Description!, WorkflowKeyword);
-            var workflowJson = workflowPayload.ExtractFirstJson();
+            var workflowJson = JsonCompatibility.NormalizeNonStandardNumbers(
+                workflowPayload.ExtractFirstJson());
             using var document = JsonDocument.Parse(workflowJson);
             using var buffer = new MemoryStream();
             using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))
