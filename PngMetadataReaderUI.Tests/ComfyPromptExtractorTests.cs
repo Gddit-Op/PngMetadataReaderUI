@@ -143,6 +143,39 @@ public class ComfyPromptExtractorTests
     }
 
     [Fact]
+    public void ExtractsPromptFromKreaPromptWeightNode()
+    {
+        var pipeline = Deserialize(
+            """
+            {
+              "6": {
+                "inputs": { "text": "", "clip": ["12", 0] },
+                "class_type": "CLIPTextEncode"
+              },
+              "34": {
+                "inputs": { "positive": ["44", 1], "negative": ["6", 0] },
+                "class_type": "KreaTwoStageSampler"
+              },
+              "44": {
+                "inputs": {
+                  "text": "A couple on a leather couch in a bright modern living room.",
+                  "strength": 1.0,
+                  "clip": ["12", 0]
+                },
+                "class_type": "Krea2PromptWeight"
+              }
+            }
+            """);
+
+        var result = ComfyPromptExtractor.Extract(pipeline);
+
+        Assert.Equal(
+            ["A couple on a leather couch in a bright modern living room."],
+            result.Positive);
+        Assert.Empty(result.Negative);
+    }
+
+    [Fact]
     public void NormalizesNonStandardNumbersOutsideStrings()
     {
         const string json =

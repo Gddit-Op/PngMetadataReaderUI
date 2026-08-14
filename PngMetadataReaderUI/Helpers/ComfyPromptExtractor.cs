@@ -26,7 +26,7 @@ internal static class ComfyPromptExtractor
 
         var known = positive.Concat(negative).ToHashSet(StringComparer.Ordinal);
         var unclassified = new List<string>();
-        foreach (var node in pipeline.Values.Where(IsTextEncode))
+        foreach (var node in pipeline.Values.Where(IsPromptTextNode))
         {
             var texts = GetTexts(pipeline, node).ToList();
             var title = node.Meta?.Title ?? string.Empty;
@@ -83,7 +83,7 @@ internal static class ComfyPromptExtractor
             return;
         }
 
-        if (IsTextEncode(node))
+        if (IsPromptTextNode(node))
         {
             AddDistinct(destination, GetTexts(pipeline, node));
             return;
@@ -166,6 +166,10 @@ internal static class ComfyPromptExtractor
 
     private static bool IsTextEncode(Node node) =>
         node.ClassType.Contains("CLIPTextEncode", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsPromptTextNode(Node node) =>
+        IsTextEncode(node) ||
+        node.ClassType.Contains("PromptWeight", StringComparison.OrdinalIgnoreCase);
 
     private static bool TryGetInput(Node node, string name, out JsonElement value)
     {
